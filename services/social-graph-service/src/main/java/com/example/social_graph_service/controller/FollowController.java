@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,40 +22,44 @@ public class FollowController {
 
     @PostMapping("/{userId}")
     public ResponseEntity<Void> follow(
-            @RequestHeader("X-User-Id") Long currentUserId,
             @PathVariable Long userId
     ) {
 
-        boolean created = followService.follow(currentUserId, userId);
+        boolean created = followService.follow(getCurrentUserId(), userId);
 
         return created ? ResponseEntity.status(HttpStatus.CREATED).build() : ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> unfollow(
-            @RequestHeader("X-User-Id") Long currentUserId,
-            @PathVariable Long userId
-    ) {
-        followService.unfollow(currentUserId, userId);
+    public ResponseEntity<Void> unfollow(@PathVariable Long userId) {
+        followService.unfollow(getCurrentUserId(), userId);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @GetMapping("/following")
     public Page<FollowingDto> getFollowing(
-            @RequestHeader("X-User-Id") Long currentUserId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
-        return followService.getFollowing(currentUserId, pageable);
+        return followService.getFollowing(getCurrentUserId(), pageable);
     }
 
     @GetMapping("/followers")
     public Page<FollowerDto> getFollowers(
-            @RequestHeader("X-User-Id") Long currentUserId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
-        return followService.getFollowers(currentUserId, pageable);
+        return followService.getFollowers(getCurrentUserId(), pageable);
+    }
+
+    private Long getCurrentUserId() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new IllegalStateException("No authenticated user in security context");
+        }
+
+        return (Long) authentication.getPrincipal();
     }
 }
