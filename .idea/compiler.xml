@@ -24,6 +24,12 @@
         <module name="social-graph-service" />
         <module name="auth-service" />
       </profile>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="user-service" />
+      </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
@@ -32,6 +38,7 @@
       <module name="feed-service" options="-parameters" />
       <module name="media-service" options="-parameters" />
       <module name="social-graph-service" options="-parameters" />
+      <module name="user-service" options="-parameters" />
     </option>
   </component>
 </project>

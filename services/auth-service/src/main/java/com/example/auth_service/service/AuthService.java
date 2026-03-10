@@ -21,7 +21,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -109,14 +108,21 @@ public class AuthService {
     }
 
     public void logout(RefreshRequest request) {
-        String rawToken = request.getRefreshToken();
-
-        String sha256 = sha256(rawToken);
+        String sha256 = sha256(request.getRefreshToken());
 
         refreshTokenRepository.findByTokenHash(sha256)
                 .ifPresent(token -> {
                     token.setRevoked(true);
                     refreshTokenRepository.save(token);
+                });
+    }
+
+    public void logoutAll(RefreshRequest request) {
+        String sha256 = sha256(request.getRefreshToken());
+
+        refreshTokenRepository.findByTokenHash(sha256)
+                .ifPresent(token -> {
+                    refreshTokenRepository.deleteAllByUserId(token.getUserId());
                 });
     }
 
