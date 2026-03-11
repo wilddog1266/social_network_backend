@@ -1,6 +1,7 @@
 package com.example.user_service.service;
 
 import com.example.user_service.config.JwtProperties;
+import com.example.user_service.security.CurrentUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -25,15 +26,13 @@ public class JwtService {
         secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public Long extractUserId(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
-                .requireIssuer(properties.getIssuer())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    public CurrentUser extractCurrentUser(String token) {
+        Claims claims = extractClaims(token);
 
-        return Long.parseLong(claims.getSubject());
+        Long userId = Long.parseLong(claims.getSubject());
+        String username = claims.get("username", String.class);
+
+        return new CurrentUser(userId, username);
     }
 
     public boolean isValid(String token) {
@@ -47,5 +46,14 @@ public class JwtService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .requireIssuer(properties.getIssuer())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
