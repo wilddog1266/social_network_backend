@@ -1,6 +1,6 @@
 package com.example.user_service.security;
 
-import com.example.user_service.filter.JwtAuthFilter;
+import com.example.common.security.filter.JwtAuthFilter;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -32,4 +32,6 @@ public class SecurityConfig {
 
         return httpSecurity.build();
     }
+
+
 }

@@ -1,6 +1,6 @@
 package com.example.social_graph_service.security;
 
-import com.example.social_graph_service.filter.JwtAuthFilter;
+import com.example.common.security.filter.JwtAuthFilter;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
