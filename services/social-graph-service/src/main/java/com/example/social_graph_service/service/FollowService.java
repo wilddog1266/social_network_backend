@@ -4,6 +4,7 @@ import com.example.social_graph_service.dto.FollowerDto;
 import com.example.social_graph_service.dto.FollowingDto;
 import com.example.social_graph_service.entity.FollowEntity;
 import com.example.social_graph_service.entity.FollowId;
+import com.example.social_graph_service.kafka.FollowEventPublisher;
 import com.example.social_graph_service.repository.FollowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,7 @@ import java.util.Objects;
 public class FollowService {
 
     private final FollowRepository followRepository;
+    private final FollowEventPublisher followEventPublisher;
 
     public boolean follow(Long currentUserId, Long targetUserId) {
         if(Objects.equals(currentUserId, targetUserId)) {
@@ -31,6 +33,8 @@ public class FollowService {
         FollowEntity followEntity = new FollowEntity(id);
 
         followRepository.save(followEntity);
+        followEventPublisher.publishUserFollowed(currentUserId, targetUserId);
+
         return true;
     }
 

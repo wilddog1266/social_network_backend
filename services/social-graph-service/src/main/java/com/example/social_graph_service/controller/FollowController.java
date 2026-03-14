@@ -1,5 +1,6 @@
 package com.example.social_graph_service.controller;
 
+import com.example.common.security.CurrentUser;
 import com.example.social_graph_service.dto.FollowerDto;
 import com.example.social_graph_service.dto.FollowingDto;
 import com.example.social_graph_service.service.FollowService;
@@ -60,6 +61,8 @@ public class FollowController {
             throw new IllegalStateException("No authenticated user in security context");
         }
 
-        return (Long) authentication.getPrincipal();
+        CurrentUser currentUser = (CurrentUser) authentication.getPrincipal();
+
+        return currentUser.userId();
     }
 }
