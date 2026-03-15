@@ -1,4 +1,4 @@
-package com.example.social_graph_service.event;
+package com.example.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,5 +18,4 @@ public class UserFollowedEvent {
     private Long followeeId;
 
     private Instant createdAt;
-
 }

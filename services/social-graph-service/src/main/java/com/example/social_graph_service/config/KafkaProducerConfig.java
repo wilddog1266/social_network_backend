@@ -1,6 +1,6 @@
 package com.example.social_graph_service.config;
 
-import com.example.social_graph_service.event.UserFollowedEvent;
+import com.example.common.UserFollowedEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.kafka.clients.producer.ProducerConfig;

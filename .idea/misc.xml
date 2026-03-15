@@ -12,6 +12,8 @@
         <option value="$PROJECT_DIR$/libs/pom.xml" />
         <option value="$PROJECT_DIR$/common-security/pom.xml" />
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/services/notification-service/pom.xml" />
+        <option value="$PROJECT_DIR$/libs/common-events/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
