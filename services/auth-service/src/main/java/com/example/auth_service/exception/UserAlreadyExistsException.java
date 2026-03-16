@@ -1,6 +1,8 @@
 package com.example.auth_service.exception;
 
-public class UserAlreadyExistsException extends RuntimeException {
+import com.example.common.exception.BadRequestException;
+
+public class UserAlreadyExistsException extends BadRequestException {
 
     public UserAlreadyExistsException(String message) {
         super(message);

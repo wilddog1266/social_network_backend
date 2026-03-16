@@ -4,6 +4,7 @@ import com.example.social_graph_service.dto.FollowerDto;
 import com.example.social_graph_service.dto.FollowingDto;
 import com.example.social_graph_service.entity.FollowEntity;
 import com.example.social_graph_service.entity.FollowId;
+import com.example.social_graph_service.exception.CannotFollowYourselfException;
 import com.example.social_graph_service.kafka.FollowEventPublisher;
 import com.example.social_graph_service.repository.FollowRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class FollowService {
 
     public boolean follow(Long currentUserId, Long targetUserId) {
         if(Objects.equals(currentUserId, targetUserId)) {
-            throw new IllegalArgumentException("User can't subscribe to himself");
+            throw new CannotFollowYourselfException();
         }
 
         if(followRepository.existsByIdFollowerIdAndIdFolloweeId(currentUserId, targetUserId)) {
@@ -40,7 +41,7 @@ public class FollowService {
 
     public void unfollow(Long currentUserId, Long targetUserId) {
         if(Objects.equals(currentUserId, targetUserId)) {
-            throw new IllegalArgumentException("User can't unsubscribe to himself");
+            throw new CannotFollowYourselfException();
         }
 
         FollowId id = new FollowId(currentUserId, targetUserId);

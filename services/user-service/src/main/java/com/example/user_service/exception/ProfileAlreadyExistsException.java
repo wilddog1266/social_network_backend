@@ -1,6 +1,8 @@
 package com.example.user_service.exception;
 
-public class ProfileAlreadyExistsException extends RuntimeException {
+import com.example.common.exception.ConflictException;
+
+public class ProfileAlreadyExistsException extends ConflictException {
     public ProfileAlreadyExistsException(String message) {
         super(message);
     }

@@ -1,6 +1,8 @@
 package com.example.auth_service.exception;
 
-public class InvalidCredentialsException extends RuntimeException {
+import com.example.common.exception.BadRequestException;
+
+public class InvalidCredentialsException extends BadRequestException {
 
     public InvalidCredentialsException() {
         super("Invalid credentials");
