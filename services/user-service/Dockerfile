@@ -13,6 +13,8 @@ COPY services/auth-service/pom.xml services/auth-service/pom.xml
 COPY services/user-service/pom.xml services/user-service/pom.xml
 COPY services/social-graph-service/pom.xml services/social-graph-service/pom.xml
 COPY services/notification-service/pom.xml services/notification-service/pom.xml
+COPY services/post-service/pom.xml services/post-service/pom.xml
+
 
 # download dependencies
 RUN mvn -q -B -pl services/user-service -am dependency:go-offline

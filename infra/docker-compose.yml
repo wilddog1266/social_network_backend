@@ -135,6 +135,30 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+  post-service:
+    build:
+      context: ..
+      dockerfile: services/post-service/Dockerfile
+    container_name: sn_post_service
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/social_network
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: pass
+      APP_MINIO_URL: http://minio:9000
+      APP_MINIO_ACCESS_KEY: minio
+      APP_MINIO_SECRET_KEY: minio12345
+      APP_MINIO_BUCKET: post-media
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      APP_JWT_SECRET: ${APP_JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      minio:
+        condition: service_started
 volumes:
   sn_pg_data:
   sn_redis_data:

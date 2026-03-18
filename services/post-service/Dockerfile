@@ -15,23 +15,24 @@ COPY services/social-graph-service/pom.xml services/social-graph-service/pom.xml
 COPY services/notification-service/pom.xml services/notification-service/pom.xml
 COPY services/post-service/pom.xml services/post-service/pom.xml
 
-
 # download dependencies
-RUN mvn -q -B -pl services/auth-service -am dependency:go-offline
+RUN mvn -q -B -pl services/post-service -am dependency:go-offline
 
 # copy source code
+COPY libs/common-security/src libs/common-security/src
+COPY libs/common-events/src libs/common-events/src
 COPY libs/common-exceptions/src libs/common-exceptions/src
-COPY services/auth-service/src services/auth-service/src
+COPY services/post-service/src services/post-service/src
 
-# build auth-service with dependencies
-RUN mvn -q -DskipTests -pl services/auth-service -am package
+# build post-service with dependencies
+RUN mvn -q -DskipTests -pl services/post-service -am package
 
 FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
-COPY --from=build /app/services/auth-service/target/*.jar app.jar
+COPY --from=build /app/services/post-service/target/*.jar app.jar
 
-EXPOSE 8081
+EXPOSE 8087
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
