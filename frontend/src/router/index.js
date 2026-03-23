@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import MyPostsView from '../views/MyPostsView.vue'
+import FeedView from '../views/FeedView.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes = [
@@ -17,6 +18,12 @@ const routes = [
     path: '/posts/me',
     name: 'my-posts',
     component: MyPostsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/feed',
+    name: 'feed',
+    component: FeedView,
     meta: { requiresAuth: true },
   },
 ]

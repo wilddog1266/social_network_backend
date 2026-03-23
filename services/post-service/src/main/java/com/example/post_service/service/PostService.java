@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -117,6 +118,14 @@ public class PostService {
         postMediaRepository.delete(postMediaEntity);
 
         return getPostById(id);
+    }
+
+    public Page<PostResponse> findPostsByAuthorIds(List<Long> authorIds, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<PostEntity> postEntityPage = postRepository.findByAuthorIdIn(authorIds, pageRequest);
+
+        return postEntityPage.map(this::entityToResponse);
     }
 
     public void deletePostById(Long id) {

@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
@@ -47,6 +49,13 @@ public class PostController {
                                          @RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "15") int size) {
         return postService.getPostsByUserId(userId, page, size);
+    }
+
+    @GetMapping("/by-authors")
+    public Page<PostResponse> getPostsByAuthorIds(@RequestParam List<Long> authorIds,
+                                                  @RequestParam(defaultValue = "0") int page,
+                                                  @RequestParam(defaultValue = "10") int size) {
+        return postService.findPostsByAuthorIds(authorIds, page, size);
     }
 
     @PatchMapping("/{id}")

@@ -7,10 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface PostRepository extends JpaRepository<PostEntity, Long> {
 
     Page<PostEntity> findByAuthorIdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
     Optional<PostEntity> findByIdAndAuthorId(Long id, Long authorId);
+    Page<PostEntity> findByAuthorIdIn(List<Long> authorIds, Pageable pageable);
 }

@@ -1,63 +1,33 @@
 <template>
   <div class="page">
     <div class="topbar">
-      <h1>My Posts</h1>
+      <h1>Feed</h1>
 
       <div class="topbar-actions">
-        <button @click="goToFeed">Feed</button>
+        <button @click="goToMyPosts">My Posts</button>
         <button @click="logout">Logout</button>
       </div>
     </div>
 
-    <div class="card create-card">
-      <h2>Create post</h2>
-
-      <textarea
-        v-model="newPostContent"
-        placeholder="Write something..."
-        rows="4"
-      />
-
-      <input
-        ref="fileInput"
-        type="file"
-        accept="image/png,image/jpeg"
-        @change="handleFileChange"
-      />
-
-      <p v-if="selectedFile" class="selected-file">
-        Selected file: {{ selectedFile.name }}
-      </p>
-
-      <button @click="handleCreatePost" :disabled="loadingCreate">
-        {{ loadingCreate ? 'Creating...' : 'Create post' }}
-      </button>
-    </div>
-
     <div class="card">
-      <h2>Your posts</h2>
-
-      <button @click="loadPosts" :disabled="loadingPosts">
-        {{ loadingPosts ? 'Loading...' : 'Reload posts' }}
-      </button>
+      <div class="feed-header">
+        <h2>Latest posts</h2>
+        <button @click="loadFeed" :disabled="loading">
+          {{ loading ? 'Loading...' : 'Reload feed' }}
+        </button>
+      </div>
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <div v-if="posts.length === 0 && !loadingPosts" class="empty">
-        No posts yet
+      <div v-if="posts.length === 0 && !loading" class="empty">
+        Feed is empty
       </div>
 
       <div v-for="post in posts" :key="post.id" class="post">
         <div class="post-header">
           <div>
-            <strong>Post #{{ post.id }}</strong>
+            <strong>Author #{{ post.authorId }}</strong>
             <div class="post-date">{{ formatDate(post.createdAt) }}</div>
-          </div>
-
-          <div class="post-actions">
-            <button class="danger-btn" @click="handleDeletePost(post.id)">
-              Delete post
-            </button>
           </div>
         </div>
 
@@ -100,12 +70,6 @@
               :alt="media.fileName"
               class="post-image"
             />
-            <button
-              class="danger-btn small-btn"
-              @click="handleDeleteMedia(post.id, media.id)"
-            >
-              Delete image
-            </button>
           </div>
         </div>
 
@@ -161,13 +125,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import {
-  createPost,
-  deletePost,
-  deletePostMedia,
-  getMyPosts,
-  uploadPostMedia,
-} from '../api/postApi'
+import { getFeed } from '../api/feedApi'
 import {
   createComment,
   deleteComment,
@@ -184,25 +142,12 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const posts = ref([])
-const newPostContent = ref('')
-const loadingPosts = ref(false)
-const loadingCreate = ref(false)
+const loading = ref(false)
 const error = ref('')
-const selectedFile = ref(null)
-const fileInput = ref(null)
 
 const commentsByPostId = ref({})
 const newCommentByPostId = ref({})
 const reactionsByPostId = ref({})
-
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
-}
-
-const goToFeed = () => {
-  router.push('/feed')
-}
 
 const loadCommentsForPost = async (postId) => {
   try {
@@ -227,12 +172,12 @@ const loadReactionSummaryForPost = async (postId) => {
   }
 }
 
-const loadPosts = async () => {
+const loadFeed = async () => {
   error.value = ''
-  loadingPosts.value = true
+  loading.value = true
 
   try {
-    const pageData = await getMyPosts()
+    const pageData = await getFeed(0, 20)
     posts.value = pageData.content || []
 
     for (const post of posts.value) {
@@ -240,62 +185,9 @@ const loadPosts = async () => {
       await loadReactionSummaryForPost(post.id)
     }
   } catch {
-    error.value = 'Failed to load posts'
+    error.value = 'Failed to load feed'
   } finally {
-    loadingPosts.value = false
-  }
-}
-
-const handleCreatePost = async () => {
-  if (!newPostContent.value.trim()) {
-    error.value = 'Post content cannot be empty'
-    return
-  }
-
-  error.value = ''
-  loadingCreate.value = true
-
-  try {
-    const createdPost = await createPost(newPostContent.value)
-
-    if (selectedFile.value) {
-      await uploadPostMedia(createdPost.id, selectedFile.value)
-    }
-
-    newPostContent.value = ''
-    selectedFile.value = null
-
-    if (fileInput.value) {
-      fileInput.value.value = ''
-    }
-
-    await loadPosts()
-  } catch {
-    error.value = 'Failed to create post'
-  } finally {
-    loadingCreate.value = false
-  }
-}
-
-const handleDeletePost = async (postId) => {
-  error.value = ''
-
-  try {
-    await deletePost(postId)
-    await loadPosts()
-  } catch {
-    error.value = 'Failed to delete post'
-  }
-}
-
-const handleDeleteMedia = async (postId, mediaId) => {
-  error.value = ''
-
-  try {
-    await deletePostMedia(postId, mediaId)
-    await loadPosts()
-  } catch {
-    error.value = 'Failed to delete image'
+    loading.value = false
   }
 }
 
@@ -362,9 +254,13 @@ const handleRemoveReaction = async (postId) => {
   }
 }
 
-const handleFileChange = (event) => {
-  const file = event.target.files?.[0] || null
-  selectedFile.value = file
+const logout = () => {
+  authStore.logout()
+  router.push('/login')
+}
+
+const goToMyPosts = () => {
+  router.push({ name: 'my-posts' })
 }
 
 const formatDate = (value) => {
@@ -373,7 +269,7 @@ const formatDate = (value) => {
 }
 
 onMounted(() => {
-  loadPosts()
+  loadFeed()
 })
 </script>
 
@@ -401,22 +297,13 @@ onMounted(() => {
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  margin-bottom: 20px;
 }
 
-.create-card {
+.feed-header {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #d0d7e2;
-  border-radius: 8px;
-  resize: vertical;
-  font: inherit;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
 }
 
 button {
@@ -434,16 +321,6 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.danger-btn {
-  background: #b91c1c;
-}
-
-.small-btn {
-  margin-top: 8px;
-  font-size: 13px;
-  padding: 8px 10px;
-}
-
 .error {
   color: #b91c1c;
   margin-top: 12px;
@@ -452,11 +329,6 @@ button:disabled {
 .empty {
   margin-top: 16px;
   color: #6b7280;
-}
-
-.selected-file {
-  color: #374151;
-  font-size: 14px;
 }
 
 .post {
@@ -476,11 +348,6 @@ button:disabled {
   color: #6b7280;
   font-size: 14px;
   margin-top: 4px;
-}
-
-.post-actions {
-  display: flex;
-  align-items: flex-start;
 }
 
 .post-content {
@@ -575,5 +442,15 @@ button:disabled {
 .empty-comments {
   color: #6b7280;
   font-size: 14px;
+}
+
+.danger-btn {
+  background: #b91c1c;
+}
+
+.small-btn {
+  margin-top: 8px;
+  font-size: 13px;
+  padding: 8px 10px;
 }
 </style>

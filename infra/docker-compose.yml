@@ -86,7 +86,27 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
+  feed-service:
+    build:
+      context: ..
+      dockerfile: services/feed-service/Dockerfile
+    container_name: sn_feed_service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/social_network
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: pass
+      APP_JWT_SECRET: ${APP_JWT_SECRET}
+      SOCIAL_GRAPH_SERVICE_URL: http://social-graph-service:8084
+      POST_SERVICE_URL: http://post-service:8087
+    depends_on:
+      postgres:
+        condition: service_healthy
+      social-graph-service:
+        condition: service_started
+      post-service:
+        condition: service_started
   social-graph-service:
     build:
       context: ..

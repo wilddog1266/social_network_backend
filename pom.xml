@@ -21,6 +21,9 @@
         <module>services/user-service</module>
         <module>services/social-graph-service</module>
         <module>services/notification-service</module>
+        <module>services/feed-service</module>
+        <module>services/comment-service</module>
+        <module>services/reaction-service</module>
     </modules>
 
 </project>
