@@ -14,6 +14,8 @@ COPY services/user-service/pom.xml services/user-service/pom.xml
 COPY services/social-graph-service/pom.xml services/social-graph-service/pom.xml
 COPY services/notification-service/pom.xml services/notification-service/pom.xml
 COPY services/post-service/pom.xml services/post-service/pom.xml
+COPY services/reaction-service/pom.xml services/reaction-service/pom.xml
+COPY services/comment-service/pom.xml services/comment-service/pom.xml
 
 # download dependencies
 RUN mvn -q -B -pl services/post-service -am dependency:go-offline

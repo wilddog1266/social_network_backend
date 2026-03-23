@@ -8,7 +8,9 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="post-service" />
+        <module name="comment-service" />
         <module name="user-service" />
+        <module name="reaction-service" />
       </profile>
       <profile name="Annotation profile for social-network-backend" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -75,10 +77,12 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="auth-service" options="-parameters" />
+      <module name="comment-service" options="-parameters" />
       <module name="feed-service" options="-parameters" />
       <module name="media-service" options="-parameters" />
       <module name="notification-service" options="-parameters" />
       <module name="post-service" options="-parameters" />
+      <module name="reaction-service" options="-parameters" />
       <module name="social-graph-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>

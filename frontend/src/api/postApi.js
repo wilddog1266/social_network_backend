@@ -25,3 +25,12 @@ export async function uploadPostMedia(postId, file) {
 
   return response.data
 }
+
+export async function deletePost(postId) {
+  await api.delete(`${POST_API_URL}/api/posts/${postId}`)
+}
+
+export async function deletePostMedia(postId, mediaId) {
+  const response = await api.delete(`${POST_API_URL}/api/posts/${postId}/media/${mediaId}`)
+  return response.data
+}

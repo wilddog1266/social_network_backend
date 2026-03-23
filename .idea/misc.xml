@@ -16,6 +16,8 @@
         <option value="$PROJECT_DIR$/libs/common-events/pom.xml" />
         <option value="$PROJECT_DIR$/libs/common-exceptions/pom.xml" />
         <option value="$PROJECT_DIR$/services/post-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/comment-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/reaction-service/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

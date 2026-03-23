@@ -19,23 +19,23 @@ COPY services/comment-service/pom.xml services/comment-service/pom.xml
 
 
 # download dependencies
-RUN mvn -q -B -pl services/notification-service -am dependency:go-offline
+RUN mvn -q -B -pl services/reaction-service -am dependency:go-offline
 
 # copy source code
-COPY libs/common-events/src libs/common-events/src
 COPY libs/common-security/src libs/common-security/src
 COPY libs/common-exceptions/src libs/common-exceptions/src
-COPY services/notification-service/src services/notification-service/src
+COPY libs/common-events/src libs/common-events/src
+COPY services/reaction-service/src services/reaction-service/src
 
-# build notification-service with dependencies
-RUN mvn -q -DskipTests -pl services/notification-service -am package
+# build reaction-service with dependencies
+RUN mvn -q -DskipTests -pl services/reaction-service -am package
 
 FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
-COPY --from=build /app/services/notification-service/target/*.jar app.jar
+COPY --from=build /app/services/reaction-service/target/*.jar app.jar
 
-EXPOSE 8086
+EXPOSE 8090
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
