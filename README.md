@@ -18,6 +18,9 @@ backend-систем: декомпозицию на сервисы, асинхр
 -   post-service - создание и управление постами
 -   notification-service - обработка событий и генерация уведомлений
 -   media-service - работа с файлами (S3/MinIO)
+-   feed-service - лента постов из подписок
+-   reaction-service - управление реакциями (лайк/дизлайк)
+-   comment-service - управление комментариями под постами
 
 ### Взаимодействие сервисов
 
@@ -32,6 +35,7 @@ backend-систем: декомпозицию на сервисы, асинхр
 2.  Сервис публикует событие `UserFollowedEvent` в Kafka\
 3.  notification-service получает событие\
 4.  Создаётся уведомление для пользователя
+   (TODO: Реакция -> уведомление / Комментарий -> уведомление)
 
 ------------------------------------------------------------------------
 
@@ -66,7 +70,10 @@ backend-систем: декомпозицию на сервисы, асинхр
 /user-service\
 /post-service\
 /notification-service\
-/media-service
+/media-service\
+/feed-service\
+/comment-service\
+/reaction-service
 
 ------------------------------------------------------------------------
 
@@ -75,6 +82,10 @@ backend-систем: декомпозицию на сервисы, асинхр
 git clone https://github.com/wilddog1266/social_network_backend.git\
 cd social_network_backend\
 docker-compose up --build
+cd frontend\
+npm run dev
+
+frontend: localhost:5173
 
 ------------------------------------------------------------------------
 
@@ -88,12 +99,11 @@ docker-compose up --build
 
 ## Current Status
 
-Реализовано: - JWT authentication\
-- Kafka event flow\
-- notification-service
+В процессе: 
+- уведомления на реакции и комментарии\
+- подписки из ленты\
+- отдельная страница пользователя
 
-В процессе: - feed-service\
-- комментарии и лайки
 
 ------------------------------------------------------------------------
 
@@ -102,8 +112,9 @@ docker-compose up --build
 -   [x] JWT authentication\
 -   [x] Kafka integration\
 -   [x] Notification service\
--   [ ] Feed generation\
--   [ ] Comments & Likes\
+-   [x] Feed generation\
+-   [x] Comments & Likes\
+-   [ ] Comments & Reactions notifications\
 -   [ ] Media optimization
 
 ------------------------------------------------------------------------
