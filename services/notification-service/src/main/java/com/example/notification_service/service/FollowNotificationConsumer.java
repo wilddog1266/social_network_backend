@@ -9,11 +9,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class NotificationConsumer {
+public class FollowNotificationConsumer {
 
     private final NotificationRepository notificationRepository;
 
-    @KafkaListener(topics = "user-followed")
+    @KafkaListener(topics = "${app.kafka.topic.user-followed}",
+            containerFactory = "userFollowedKafkaListenerContainerFactory"
+    )
     public void handle(UserFollowedEvent event) {
         NotificationEntity notificationEntity = new NotificationEntity();
         notificationEntity.setActorId(event.getFollowerId());

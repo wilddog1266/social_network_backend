@@ -5,6 +5,7 @@
 
       <div class="topbar-actions">
         <button @click="goToMyPosts">My Posts</button>
+        <button @click="goToNotifications">Notifications</button>
         <button @click="logout">Logout</button>
       </div>
     </div>
@@ -170,6 +171,10 @@ const loadReactionSummaryForPost = async (postId) => {
       myReaction: null,
     }
   }
+}
+
+const goToNotifications = () => {
+  router.push({ name: 'notifications' })
 }
 
 const loadFeed = async () => {

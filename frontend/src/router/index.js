@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import MyPostsView from '../views/MyPostsView.vue'
+import NotificationsView from '../views/NotificationsView.vue'
 import FeedView from '../views/FeedView.vue'
 import { useAuthStore } from '../stores/auth'
 
@@ -24,6 +25,12 @@ const routes = [
     path: '/feed',
     name: 'feed',
     component: FeedView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/notifications',
+    name: 'notifications',
+    component: NotificationsView,
     meta: { requiresAuth: true },
   },
 ]

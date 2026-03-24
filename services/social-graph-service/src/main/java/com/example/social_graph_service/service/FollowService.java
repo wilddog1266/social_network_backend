@@ -1,5 +1,6 @@
 package com.example.social_graph_service.service;
 
+import com.example.common.security.CurrentUser;
 import com.example.social_graph_service.dto.FollowerDto;
 import com.example.social_graph_service.dto.FollowingDto;
 import com.example.social_graph_service.entity.FollowEntity;
@@ -10,6 +11,7 @@ import com.example.social_graph_service.repository.FollowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -21,7 +23,10 @@ public class FollowService {
     private final FollowRepository followRepository;
     private final FollowEventPublisher followEventPublisher;
 
-    public boolean follow(Long currentUserId, Long targetUserId) {
+    public boolean follow(Long targetUserId) {
+        CurrentUser currentUser = getCurrentUser();
+        Long currentUserId = currentUser.userId();
+
         if(Objects.equals(currentUserId, targetUserId)) {
             throw new CannotFollowYourselfException();
         }
@@ -39,7 +44,10 @@ public class FollowService {
         return true;
     }
 
-    public void unfollow(Long currentUserId, Long targetUserId) {
+    public void unfollow(Long targetUserId) {
+        CurrentUser currentUser = getCurrentUser();
+        Long currentUserId = currentUser.userId();
+
         if(Objects.equals(currentUserId, targetUserId)) {
             throw new CannotFollowYourselfException();
         }
@@ -49,7 +57,10 @@ public class FollowService {
         followRepository.deleteById(id);
     }
 
-    public Page<FollowingDto> getFollowing(Long currentUserId, Pageable pageable) {
+    public Page<FollowingDto> getFollowing(Pageable pageable) {
+        CurrentUser currentUser = getCurrentUser();
+        Long currentUserId = currentUser.userId();
+
         Page<FollowEntity> page = followRepository.findByIdFollowerId(currentUserId, pageable);
 
         return page.map(followEntity -> {
@@ -60,7 +71,10 @@ public class FollowService {
         });
     }
 
-    public Page<FollowerDto> getFollowers(Long currentUserId, Pageable pageable) {
+    public Page<FollowerDto> getFollowers(Pageable pageable) {
+        CurrentUser currentUser = getCurrentUser();
+        Long currentUserId = currentUser.userId();
+
         Page<FollowEntity> page = followRepository.findByIdFolloweeId(currentUserId, pageable);
 
         return page.map(followEntity -> {
@@ -69,5 +83,11 @@ public class FollowService {
             dto.setCreatedAt(followEntity.getCreatedAt());
             return dto;
         });
+    }
+
+    private CurrentUser getCurrentUser() {
+        return (CurrentUser) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
     }
 }

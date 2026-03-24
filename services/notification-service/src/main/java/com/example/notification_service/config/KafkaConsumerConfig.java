@@ -1,16 +1,18 @@
 package com.example.notification_service.config;
 
+import com.example.common.PostCommentedEvent;
+import com.example.common.PostReactionAddedEvent;
 import com.example.common.UserFollowedEvent;
-import org.springframework.kafka.annotation.EnableKafka;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,25 +28,80 @@ public class KafkaConsumerConfig {
     private String groupId;
 
     @Bean
-    public ConsumerFactory<String, UserFollowedEvent> consumerFactory() {
-
+    public ConsumerFactory<String, UserFollowedEvent> userFollowedConsumerFactory() {
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        props.put("spring.json.trusted.packages", "com.example.common");
-        props.put("spring.json.value.default.type", "com.example.common.UserFollowedEvent");
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        return new DefaultKafkaConsumerFactory<>(props);
+        JsonDeserializer<UserFollowedEvent> deserializer =
+                new JsonDeserializer<>(UserFollowedEvent.class);
+        deserializer.addTrustedPackages("com.example.common");
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer
+        );
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, UserFollowedEvent> kafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, UserFollowedEvent> userFollowedKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, UserFollowedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
+        factory.setConsumerFactory(userFollowedConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, PostCommentedEvent> postCommentedConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        JsonDeserializer<PostCommentedEvent> deserializer =
+                new JsonDeserializer<>(PostCommentedEvent.class);
+        deserializer.addTrustedPackages("com.example.common");
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer
+        );
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, PostCommentedEvent> postCommentedKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, PostCommentedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(postCommentedConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, PostReactionAddedEvent> postReactionAddedConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        JsonDeserializer<PostReactionAddedEvent> deserializer =
+                new JsonDeserializer<>(PostReactionAddedEvent.class);
+        deserializer.addTrustedPackages("com.example.common");
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer
+        );
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, PostReactionAddedEvent> postReactionAddedKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, PostReactionAddedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(postReactionAddedConsumerFactory());
         return factory;
     }
 }

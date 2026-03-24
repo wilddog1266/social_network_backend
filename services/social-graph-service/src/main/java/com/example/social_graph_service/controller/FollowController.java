@@ -26,14 +26,14 @@ public class FollowController {
             @PathVariable Long userId
     ) {
 
-        boolean created = followService.follow(getCurrentUserId(), userId);
+        boolean created = followService.follow(userId);
 
         return created ? ResponseEntity.status(HttpStatus.CREATED).build() : ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> unfollow(@PathVariable Long userId) {
-        followService.unfollow(getCurrentUserId(), userId);
+        followService.unfollow(userId);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
@@ -43,7 +43,7 @@ public class FollowController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
-        return followService.getFollowing(getCurrentUserId(), pageable);
+        return followService.getFollowing(pageable);
     }
 
     @GetMapping("/followers")
@@ -51,18 +51,7 @@ public class FollowController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
-        return followService.getFollowers(getCurrentUserId(), pageable);
+        return followService.getFollowers(pageable);
     }
 
-    private Long getCurrentUserId() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new IllegalStateException("No authenticated user in security context");
-        }
-
-        CurrentUser currentUser = (CurrentUser) authentication.getPrincipal();
-
-        return currentUser.userId();
-    }
 }

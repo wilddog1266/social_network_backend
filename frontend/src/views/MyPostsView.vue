@@ -5,6 +5,7 @@
 
       <div class="topbar-actions">
         <button @click="goToFeed">Feed</button>
+        <button @click="goToNotifications">Notifications</button>
         <button @click="logout">Logout</button>
       </div>
     </div>
@@ -202,6 +203,10 @@ const logout = () => {
 
 const goToFeed = () => {
   router.push('/feed')
+}
+
+const goToNotifications = () => {
+  router.push({ name: 'notifications' })
 }
 
 const loadCommentsForPost = async (postId) => {

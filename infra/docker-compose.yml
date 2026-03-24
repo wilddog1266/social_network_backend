@@ -194,13 +194,15 @@ services:
 #      APP_MINIO_ACCESS_KEY: minio
 #      APP_MINIO_SECRET_KEY: minio12345
 #      APP_MINIO_BUCKET: post-media
-      #      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_JWT_SECRET: ${APP_JWT_SECRET}
+      POST_SERVICE_URL: http://post-service:8087
+
     depends_on:
       postgres:
         condition: service_healthy
-#      kafka:
-#        condition: service_started
+      kafka:
+        condition: service_started
 #      minio:
 #        condition: service_started
   reaction-service:
@@ -218,13 +220,14 @@ services:
       #      APP_MINIO_ACCESS_KEY: minio
       #      APP_MINIO_SECRET_KEY: minio12345
       #      APP_MINIO_BUCKET: post-media
-      #      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_JWT_SECRET: ${APP_JWT_SECRET}
+      POST_SERVICE_URL: http://post-service:8087
     depends_on:
       postgres:
         condition: service_healthy
-  #      kafka:
-  #        condition: service_started
+      kafka:
+        condition: service_started
   #      minio:
   #        condition: service_started
 volumes:

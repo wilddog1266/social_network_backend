@@ -1,10 +1,14 @@
 package com.example.reaction_service.service;
 
 import com.example.common.security.CurrentUser;
+import com.example.reaction_service.client.PostClient;
 import com.example.reaction_service.entity.PostReactionEntity;
 import com.example.reaction_service.entity.ReactionType;
+import com.example.reaction_service.kafka.ReactionEventPublisher;
 import com.example.reaction_service.repository.PostReactionRepository;
+import com.example.reaction_service.response.PostAuthorResponse;
 import com.example.reaction_service.response.PostReactionSummaryResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -16,11 +20,16 @@ import java.util.Optional;
 public class PostReactionService {
 
     private final PostReactionRepository postReactionRepository;
+    private final PostClient postClient;
+    private final ReactionEventPublisher reactionEventPublisher;
+    private final HttpServletRequest httpServletRequest;
 
     public PostReactionSummaryResponse like(Long postId) {
         CurrentUser currentUser = getCurrentUser();
 
         Optional<PostReactionEntity> existing = postReactionRepository.findByPostIdAndUserId(postId, currentUser.userId());
+
+        boolean changed = false;
 
         if(existing.isEmpty()) {
             PostReactionEntity reaction = new PostReactionEntity();
@@ -28,13 +37,25 @@ public class PostReactionService {
             reaction.setPostId(postId);
             reaction.setUserId(currentUser.userId());
             postReactionRepository.save(reaction);
+            changed = true;
         } else {
             PostReactionEntity current = existing.get();
 
             if (current.getReactionType() == ReactionType.DISLIKE) {
                 current.setReactionType(ReactionType.LIKE);
                 postReactionRepository.save(current);
+                changed = true;
             }
+        }
+
+        if(changed){
+            String authHeader = httpServletRequest.getHeader("Authorization");
+            PostAuthorResponse post = postClient.getPostById(postId, authHeader);
+
+            reactionEventPublisher.publishReactionEvent(postId,
+                    post.getAuthorId(),
+                    currentUser.userId(),
+                    com.example.common.ReactionType.LIKE);
         }
 
         return buildSummary(postId, currentUser.userId());
@@ -45,19 +66,33 @@ public class PostReactionService {
 
         Optional<PostReactionEntity> existing = postReactionRepository.findByPostIdAndUserId(postId, currentUser.userId());
 
+        boolean changed = false;
+
         if(existing.isEmpty()) {
             PostReactionEntity reaction = new PostReactionEntity();
             reaction.setReactionType(ReactionType.DISLIKE);
             reaction.setPostId(postId);
             reaction.setUserId(currentUser.userId());
             postReactionRepository.save(reaction);
+            changed = true;
         } else {
             PostReactionEntity current = existing.get();
 
             if (current.getReactionType() == ReactionType.LIKE) {
                 current.setReactionType(ReactionType.DISLIKE);
                 postReactionRepository.save(current);
+                changed = true;
             }
+        }
+
+       if(changed){
+            String authHeader = httpServletRequest.getHeader("Authorization");
+            PostAuthorResponse post = postClient.getPostById(postId, authHeader);
+
+            reactionEventPublisher.publishReactionEvent(postId,
+                    post.getAuthorId(),
+                    currentUser.userId(),
+                    com.example.common.ReactionType.DISLIKE);
         }
 
         return buildSummary(postId, currentUser.userId());
