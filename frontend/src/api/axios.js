@@ -1,7 +1,9 @@
 import axios from 'axios'
 import { useAuthStore } from '../stores/auth'
 
-const api = axios.create()
+const api = axios.create({
+  timeout: 10000,
+})
 
 api.interceptors.request.use((config) => {
   const authStore = useAuthStore()

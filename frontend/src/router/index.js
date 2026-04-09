@@ -3,16 +3,22 @@ import LoginView from '../views/LoginView.vue'
 import MyPostsView from '../views/MyPostsView.vue'
 import NotificationsView from '../views/NotificationsView.vue'
 import FeedView from '../views/FeedView.vue'
+import ProfileView from '../views/ProfileView.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes = [
   {
     path: '/',
-    redirect: '/login',
+    redirect: '/feed',
   },
   {
     path: '/login',
     name: 'login',
+    component: LoginView,
+  },
+  {
+    path: '/register',
+    name: 'register',
     component: LoginView,
   },
   {
@@ -33,6 +39,18 @@ const routes = [
     component: NotificationsView,
     meta: { requiresAuth: true },
   },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: ProfileView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/users/:userId',
+    name: 'user-profile',
+    component: ProfileView,
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({
@@ -47,8 +65,8 @@ router.beforeEach((to) => {
     return '/login'
   }
 
-  if (to.path === '/login' && authStore.token) {
-    return '/posts/me'
+  if ((to.path === '/login' || to.path === '/register') && authStore.token) {
+    return '/feed'
   }
 })
 

@@ -1,185 +1,150 @@
 <template>
-  <div class="page">
-    <div class="topbar">
-      <h1>My Posts</h1>
+  <AppShell
+    eyebrow="Publishing"
+    title="Create and manage your posts"
+    description="A practical workspace for publishing content, attaching media, and monitoring the discussion around your own posts."
+    :username="authStore.username"
+    @logout="logout"
+  >
+    <template #actions>
+      <button type="button" class="button button-secondary" :disabled="loadingPosts" @click="loadPosts">
+        {{ loadingPosts ? 'Refreshing...' : 'Refresh posts' }}
+      </button>
+      <RouterLink class="button button-ghost" to="/feed">Open feed</RouterLink>
+    </template>
 
-      <div class="topbar-actions">
-        <button @click="goToFeed">Feed</button>
-        <button @click="goToNotifications">Notifications</button>
-        <button @click="logout">Logout</button>
+    <section class="surface-card composer-card">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">New post</span>
+          <h2 class="section-title">Share an update</h2>
+          <p class="section-subtitle">Keep it simple: text first, with optional image upload after the post is created.</p>
+        </div>
+        <span class="pill">{{ contentLength }}/1000</span>
       </div>
-    </div>
-
-    <div class="card create-card">
-      <h2>Create post</h2>
 
       <textarea
         v-model="newPostContent"
-        placeholder="Write something..."
-        rows="4"
+        class="textarea"
+        rows="5"
+        maxlength="1000"
+        placeholder="What do you want to share with your network today?"
       />
 
-      <input
-        ref="fileInput"
-        type="file"
-        accept="image/png,image/jpeg"
-        @change="handleFileChange"
+      <div class="composer-footer">
+        <label class="upload-field">
+          <span class="upload-label">Attachment</span>
+          <input
+            ref="fileInput"
+            class="input"
+            type="file"
+            accept="image/png,image/jpeg"
+            @change="handleFileChange"
+          />
+        </label>
+
+        <div class="composer-actions">
+          <p v-if="selectedFile" class="selected-file">{{ selectedFile.name }}</p>
+          <button type="button" class="button button-primary" :disabled="loadingCreate" @click="handleCreatePost">
+            {{ loadingCreate ? 'Publishing...' : 'Publish post' }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <InlineMessage v-if="error" tone="error" :message="error" />
+
+    <div v-if="loadingPosts" class="stack">
+      <LoadingCard v-for="index in 2" :key="index" />
+    </div>
+
+    <EmptyState
+      v-else-if="!posts.length"
+      icon="◌"
+      title="No posts yet"
+      description="Your publishing history will appear here once you create the first post."
+    />
+
+    <div v-else class="stack">
+      <PostCard
+        v-for="post in posts"
+        :key="post.id"
+        :post="post"
+        :comments="commentsByPostId[post.id] || []"
+        :reaction="reactionsByPostId[post.id]"
+        :draft-comment="newCommentByPostId[post.id] || ''"
+        :allow-delete="true"
+        :allow-delete-media="true"
+        author-prefix="You"
+        @update:draft-comment="(value) => updateCommentDraft(post.id, value)"
+        @submit-comment="handleCreateComment"
+        @delete-comment="handleDeleteComment"
+        @delete-post="handleDeletePost"
+        @delete-media="handleDeleteMedia"
+        @like="handleLike"
+        @dislike="handleDislike"
+        @remove-reaction="handleRemoveReaction"
       />
-
-      <p v-if="selectedFile" class="selected-file">
-        Selected file: {{ selectedFile.name }}
-      </p>
-
-      <button @click="handleCreatePost" :disabled="loadingCreate">
-        {{ loadingCreate ? 'Creating...' : 'Create post' }}
-      </button>
     </div>
 
-    <div class="card">
-      <h2>Your posts</h2>
+    <template #aside>
+      <FollowUserCard />
 
-      <button @click="loadPosts" :disabled="loadingPosts">
-        {{ loadingPosts ? 'Loading...' : 'Reload posts' }}
-      </button>
-
-      <p v-if="error" class="error">{{ error }}</p>
-
-      <div v-if="posts.length === 0 && !loadingPosts" class="empty">
-        No posts yet
-      </div>
-
-      <div v-for="post in posts" :key="post.id" class="post">
-        <div class="post-header">
-          <div>
-            <strong>Post #{{ post.id }}</strong>
-            <div class="post-date">{{ formatDate(post.createdAt) }}</div>
-          </div>
-
-          <div class="post-actions">
-            <button class="danger-btn" @click="handleDeletePost(post.id)">
-              Delete post
-            </button>
-          </div>
+      <section class="surface-card side-card">
+        <div class="side-card-header">
+          <h2 class="section-title">Profile snapshot</h2>
+          <p class="section-subtitle">Useful numbers from your current publishing session.</p>
         </div>
 
-        <p class="post-content">{{ post.content }}</p>
-
-        <div class="reaction-bar">
-          <button
-            class="reaction-btn"
-            :class="{ active: reactionsByPostId[post.id]?.myReaction === 'LIKE' }"
-            @click="handleLike(post.id)"
-          >
-            👍 Like ({{ reactionsByPostId[post.id]?.likeCount ?? 0 }})
-          </button>
-
-          <button
-            class="reaction-btn"
-            :class="{ active: reactionsByPostId[post.id]?.myReaction === 'DISLIKE' }"
-            @click="handleDislike(post.id)"
-          >
-            👎 Dislike ({{ reactionsByPostId[post.id]?.dislikeCount ?? 0 }})
-          </button>
-
-          <button
-            v-if="reactionsByPostId[post.id]?.myReaction"
-            class="reaction-remove-btn"
-            @click="handleRemoveReaction(post.id)"
-          >
-            Remove reaction
-          </button>
-        </div>
-
-        <div v-if="post.media && post.media.length > 0" class="media-list">
-          <div
-            v-for="media in post.media"
-            :key="media.id"
-            class="media-item"
-          >
-            <img
-              :src="media.url"
-              :alt="media.fileName"
-              class="post-image"
-            />
-            <button
-              class="danger-btn small-btn"
-              @click="handleDeleteMedia(post.id, media.id)"
-            >
-              Delete image
-            </button>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="meta-label">Published posts</span>
+            <strong class="stat-value">{{ posts.length }}</strong>
+          </div>
+          <div class="stat-card">
+            <span class="meta-label">Attached images</span>
+            <strong class="stat-value">{{ totalMedia }}</strong>
+          </div>
+          <div class="stat-card">
+            <span class="meta-label">Discussion entries</span>
+            <strong class="stat-value">{{ totalComments }}</strong>
           </div>
         </div>
+      </section>
 
-        <div class="comments-section">
-          <h3>Comments</h3>
-
-          <div class="comment-form">
-            <input
-              v-model="newCommentByPostId[post.id]"
-              type="text"
-              placeholder="Write a comment..."
-            />
-            <button @click="handleCreateComment(post.id)">
-              Add comment
-            </button>
-          </div>
-
-          <div
-            v-if="commentsByPostId[post.id] && commentsByPostId[post.id].length > 0"
-            class="comments-list"
-          >
-            <div
-              v-for="comment in commentsByPostId[post.id]"
-              :key="comment.id"
-              class="comment-item"
-            >
-              <div class="comment-header">
-                <strong>Comment #{{ comment.id }}</strong>
-                <span>{{ formatDate(comment.createdAt) }}</span>
-              </div>
-
-              <p class="comment-content">{{ comment.content }}</p>
-
-              <button
-                class="danger-btn small-btn"
-                @click="handleDeleteComment(post.id, comment.id)"
-              >
-                Delete comment
-              </button>
-            </div>
-          </div>
-
-          <div v-else class="empty-comments">
-            No comments yet
-          </div>
+      <section class="surface-card side-card">
+        <div class="side-card-header">
+          <h2 class="section-title">Publishing guidance</h2>
+          <p class="section-subtitle">Practical cues for a cleaner content workflow.</p>
         </div>
-      </div>
-    </div>
-  </div>
+        <ul class="tip-list">
+          <li>Write the post first, then attach one image when you need more context.</li>
+          <li>Refreshing reloads the backend state so delete operations stay accurate.</li>
+          <li>Comments and reactions are visible here so you can moderate without jumping screens.</li>
+        </ul>
+      </section>
+    </template>
+  </AppShell>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import {
-  createPost,
-  deletePost,
-  deletePostMedia,
-  getMyPosts,
-  uploadPostMedia,
-} from '../api/postApi'
-import {
-  createComment,
-  deleteComment,
-  getCommentsByPostId,
-} from '../api/commentApi'
+import { createPost, deletePost, deletePostMedia, getMyPosts, uploadPostMedia } from '../api/postApi'
+import { createComment, deleteComment, getCommentsByPostId } from '../api/commentApi'
 import {
   dislikePost,
   getPostReactionSummary,
   likePost,
   removePostReaction,
 } from '../api/reactionApi'
+import AppShell from '../components/AppShell.vue'
+import EmptyState from '../components/EmptyState.vue'
+import FollowUserCard from '../components/FollowUserCard.vue'
+import InlineMessage from '../components/InlineMessage.vue'
+import LoadingCard from '../components/LoadingCard.vue'
+import PostCard from '../components/PostCard.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -191,69 +156,68 @@ const loadingCreate = ref(false)
 const error = ref('')
 const selectedFile = ref(null)
 const fileInput = ref(null)
-
 const commentsByPostId = ref({})
 const newCommentByPostId = ref({})
 const reactionsByPostId = ref({})
 
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
-}
+const contentLength = computed(() => newPostContent.value.trim().length)
+const totalMedia = computed(() => posts.value.reduce((sum, post) => sum + (post.media?.length || 0), 0))
+const totalComments = computed(() =>
+  Object.values(commentsByPostId.value).reduce((sum, comments) => sum + comments.length, 0)
+)
 
-const goToFeed = () => {
-  router.push('/feed')
-}
-
-const goToNotifications = () => {
-  router.push({ name: 'notifications' })
-}
-
-const loadCommentsForPost = async (postId) => {
-  try {
-    const comments = await getCommentsByPostId(postId)
-    commentsByPostId.value[postId] = comments
-  } catch {
-    commentsByPostId.value[postId] = []
+function updateCommentDraft(postId, value) {
+  newCommentByPostId.value = {
+    ...newCommentByPostId.value,
+    [postId]: value,
   }
 }
 
-const loadReactionSummaryForPost = async (postId) => {
-  try {
-    const summary = await getPostReactionSummary(postId)
-    reactionsByPostId.value[postId] = summary
-  } catch {
-    reactionsByPostId.value[postId] = {
+async function hydratePost(postId) {
+  const [comments, reaction] = await Promise.all([
+    getCommentsByPostId(postId).catch(() => []),
+    getPostReactionSummary(postId).catch(() => ({
       postId,
       likeCount: 0,
       dislikeCount: 0,
       myReaction: null,
-    }
+    })),
+  ])
+
+  commentsByPostId.value = {
+    ...commentsByPostId.value,
+    [postId]: comments,
+  }
+
+  reactionsByPostId.value = {
+    ...reactionsByPostId.value,
+    [postId]: reaction,
   }
 }
 
-const loadPosts = async () => {
+async function loadPosts() {
   error.value = ''
   loadingPosts.value = true
 
   try {
     const pageData = await getMyPosts()
-    posts.value = pageData.content || []
+    const nextPosts = pageData.content || []
 
-    for (const post of posts.value) {
-      await loadCommentsForPost(post.id)
-      await loadReactionSummaryForPost(post.id)
-    }
+    posts.value = nextPosts
+    commentsByPostId.value = {}
+    reactionsByPostId.value = {}
+
+    await Promise.all(nextPosts.map((post) => hydratePost(post.id)))
   } catch {
-    error.value = 'Failed to load posts'
+    error.value = 'Your posts could not be loaded. Verify that the post, comment, and reaction services are running.'
   } finally {
     loadingPosts.value = false
   }
 }
 
-const handleCreatePost = async () => {
+async function handleCreatePost() {
   if (!newPostContent.value.trim()) {
-    error.value = 'Post content cannot be empty'
+    error.value = 'Post content cannot be empty.'
     return
   }
 
@@ -261,7 +225,7 @@ const handleCreatePost = async () => {
   loadingCreate.value = true
 
   try {
-    const createdPost = await createPost(newPostContent.value)
+    const createdPost = await createPost(newPostContent.value.trim())
 
     if (selectedFile.value) {
       await uploadPostMedia(createdPost.id, selectedFile.value)
@@ -276,39 +240,39 @@ const handleCreatePost = async () => {
 
     await loadPosts()
   } catch {
-    error.value = 'Failed to create post'
+    error.value = 'The post could not be published.'
   } finally {
     loadingCreate.value = false
   }
 }
 
-const handleDeletePost = async (postId) => {
+async function handleDeletePost(postId) {
   error.value = ''
 
   try {
     await deletePost(postId)
     await loadPosts()
   } catch {
-    error.value = 'Failed to delete post'
+    error.value = 'The post could not be deleted.'
   }
 }
 
-const handleDeleteMedia = async (postId, mediaId) => {
+async function handleDeleteMedia({ postId, mediaId }) {
   error.value = ''
 
   try {
     await deletePostMedia(postId, mediaId)
     await loadPosts()
   } catch {
-    error.value = 'Failed to delete image'
+    error.value = 'The image could not be removed.'
   }
 }
 
-const handleCreateComment = async (postId) => {
-  const content = newCommentByPostId.value[postId]?.trim()
+async function handleCreateComment(postId) {
+  const content = (newCommentByPostId.value[postId] || '').trim()
 
   if (!content) {
-    error.value = 'Comment content cannot be empty'
+    error.value = 'Comment content cannot be empty.'
     return
   }
 
@@ -316,269 +280,158 @@ const handleCreateComment = async (postId) => {
 
   try {
     await createComment(postId, content)
-    newCommentByPostId.value[postId] = ''
-    await loadCommentsForPost(postId)
+    updateCommentDraft(postId, '')
+    await hydratePost(postId)
   } catch {
-    error.value = 'Failed to create comment'
+    error.value = 'The comment could not be added.'
   }
 }
 
-const handleDeleteComment = async (postId, commentId) => {
+async function handleDeleteComment({ postId, commentId }) {
   error.value = ''
 
   try {
     await deleteComment(commentId)
-    await loadCommentsForPost(postId)
+    await hydratePost(postId)
   } catch {
-    error.value = 'Failed to delete comment'
+    error.value = 'The comment could not be deleted.'
   }
 }
 
-const handleLike = async (postId) => {
+async function handleLike(postId) {
   error.value = ''
 
   try {
-    const summary = await likePost(postId)
-    reactionsByPostId.value[postId] = summary
+    reactionsByPostId.value = {
+      ...reactionsByPostId.value,
+      [postId]: await likePost(postId),
+    }
   } catch {
-    error.value = 'Failed to like post'
+    error.value = 'The like action failed.'
   }
 }
 
-const handleDislike = async (postId) => {
+async function handleDislike(postId) {
   error.value = ''
 
   try {
-    const summary = await dislikePost(postId)
-    reactionsByPostId.value[postId] = summary
+    reactionsByPostId.value = {
+      ...reactionsByPostId.value,
+      [postId]: await dislikePost(postId),
+    }
   } catch {
-    error.value = 'Failed to dislike post'
+    error.value = 'The dislike action failed.'
   }
 }
 
-const handleRemoveReaction = async (postId) => {
+async function handleRemoveReaction(postId) {
   error.value = ''
 
   try {
-    const summary = await removePostReaction(postId)
-    reactionsByPostId.value[postId] = summary
+    reactionsByPostId.value = {
+      ...reactionsByPostId.value,
+      [postId]: await removePostReaction(postId),
+    }
   } catch {
-    error.value = 'Failed to remove reaction'
+    error.value = 'The reaction could not be cleared.'
   }
 }
 
-const handleFileChange = (event) => {
-  const file = event.target.files?.[0] || null
-  selectedFile.value = file
+function handleFileChange(event) {
+  selectedFile.value = event.target.files?.[0] || null
 }
 
-const formatDate = (value) => {
-  if (!value) return ''
-  return new Date(value).toLocaleString()
+function logout() {
+  authStore.logout()
+  router.push('/login')
 }
 
-onMounted(() => {
-  loadPosts()
-})
+onMounted(loadPosts)
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  padding: 32px;
-  background: #f5f7fb;
+.composer-card,
+.side-card {
+  padding: 1.5rem;
 }
 
-.topbar {
+.composer-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.section-heading,
+.composer-footer {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  gap: 1rem;
 }
 
-.topbar-actions {
-  display: flex;
-  gap: 10px;
+.composer-footer {
+  align-items: end;
+  flex-wrap: wrap;
 }
 
-.card {
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  margin-bottom: 20px;
+.upload-field {
+  display: grid;
+  gap: 0.45rem;
+  flex: 1 1 280px;
 }
 
-.create-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #d0d7e2;
-  border-radius: 8px;
-  resize: vertical;
-  font: inherit;
-}
-
-button {
-  width: fit-content;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: #111827;
-  color: white;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.danger-btn {
-  background: #b91c1c;
-}
-
-.small-btn {
-  margin-top: 8px;
-  font-size: 13px;
-  padding: 8px 10px;
-}
-
-.error {
-  color: #b91c1c;
-  margin-top: 12px;
-}
-
-.empty {
-  margin-top: 16px;
-  color: #6b7280;
-}
-
+.upload-label,
 .selected-file {
-  color: #374151;
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
-.post {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+.composer-actions {
+  display: grid;
+  justify-items: end;
+  gap: 0.75rem;
 }
 
-.post-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
+.stack,
+.stats-grid {
+  display: grid;
+  gap: 1.25rem;
 }
 
-.post-date {
-  color: #6b7280;
-  font-size: 14px;
-  margin-top: 4px;
+.side-card {
+  display: grid;
+  gap: 1rem;
 }
 
-.post-actions {
-  display: flex;
-  align-items: flex-start;
+.side-card-header {
+  display: grid;
+  gap: 0.35rem;
 }
 
-.post-content {
-  margin-bottom: 12px;
-  white-space: pre-wrap;
+.stat-card {
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.08);
 }
 
-.reaction-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 14px;
+.tip-list {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--text-soft);
 }
 
-.reaction-btn {
-  background: #374151;
+.tip-list li + li {
+  margin-top: 0.7rem;
 }
 
-.reaction-btn.active {
-  background: #2563eb;
-}
+@media (max-width: 768px) {
+  .section-heading,
+  .composer-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.reaction-remove-btn {
-  background: #6b7280;
-}
-
-.media-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.media-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.post-image {
-  width: 220px;
-  max-width: 100%;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-}
-
-.comments-section {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.comment-form {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.comment-form input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid #d0d7e2;
-  border-radius: 8px;
-}
-
-.comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.comment-item {
-  padding: 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-}
-
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.comment-content {
-  margin-bottom: 8px;
-  white-space: pre-wrap;
-}
-
-.empty-comments {
-  color: #6b7280;
-  font-size: 14px;
+  .composer-actions {
+    justify-items: stretch;
+  }
 }
 </style>

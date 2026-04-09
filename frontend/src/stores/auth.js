@@ -1,19 +1,34 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import { decodeJwtPayload } from '../utils/formatters'
+import { loginRequest, registerRequest } from '../api/authApi'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token') || '',
   }),
 
+  getters: {
+    profile(state) {
+      return decodeJwtPayload(state.token) ?? {}
+    },
+    username() {
+      return this.profile.username || ''
+    },
+    userId() {
+      return this.profile.sub || ''
+    },
+  },
+
   actions: {
     async login(username, password) {
-      const response = await axios.post('http://localhost:8081/api/auth/login', {
-        username,
-        password,
-      })
+      const response = await loginRequest(username, password)
+      this.token = response.accessToken
+      localStorage.setItem('token', this.token)
+    },
 
-      this.token = response.data.accessToken
+    async register(payload) {
+      const response = await registerRequest(payload)
+      this.token = response.accessToken
       localStorage.setItem('token', this.token)
     },
 

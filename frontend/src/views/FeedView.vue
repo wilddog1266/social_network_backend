@@ -1,143 +1,103 @@
 <template>
-  <div class="page">
-    <div class="topbar">
-      <h1>Feed</h1>
+  <AppShell
+    eyebrow="Network feed"
+    title="Your social feed"
+    description="A cleaner stream of recent activity from the people you follow, paired with practical interaction tools."
+    :username="authStore.username"
+    @logout="logout"
+  >
+    <template #actions>
+      <button type="button" class="button button-secondary" :disabled="loading" @click="loadFeed">
+        {{ loading ? 'Refreshing...' : 'Refresh feed' }}
+      </button>
+      <RouterLink class="button button-primary" to="/posts/me">Create a post</RouterLink>
+    </template>
 
-      <div class="topbar-actions">
-        <button @click="goToMyPosts">My Posts</button>
-        <button @click="goToNotifications">Notifications</button>
-        <button @click="logout">Logout</button>
-      </div>
+    <InlineMessage v-if="error" tone="error" :message="error" />
+
+    <div v-if="loading" class="stack">
+      <LoadingCard v-for="index in 3" :key="index" />
     </div>
 
-    <div class="card">
-      <div class="feed-header">
-        <h2>Latest posts</h2>
-        <button @click="loadFeed" :disabled="loading">
-          {{ loading ? 'Loading...' : 'Reload feed' }}
-        </button>
-      </div>
+    <EmptyState
+      v-else-if="!posts.length"
+      icon="◎"
+      title="Your feed is quiet right now"
+      description="Follow activity will appear here once there are posts available. You can still publish something from your own profile."
+      action-label="Go to my posts"
+      @action="router.push('/posts/me')"
+    />
 
-      <p v-if="error" class="error">{{ error }}</p>
-
-      <div v-if="posts.length === 0 && !loading" class="empty">
-        Feed is empty
-      </div>
-
-      <div v-for="post in posts" :key="post.id" class="post">
-        <div class="post-header">
-          <div>
-            <strong>Author #{{ post.authorId }}</strong>
-            <div class="post-date">{{ formatDate(post.createdAt) }}</div>
-          </div>
-        </div>
-
-        <p class="post-content">{{ post.content }}</p>
-
-        <div class="reaction-bar">
-          <button
-            class="reaction-btn"
-            :class="{ active: reactionsByPostId[post.id]?.myReaction === 'LIKE' }"
-            @click="handleLike(post.id)"
-          >
-            👍 Like ({{ reactionsByPostId[post.id]?.likeCount ?? 0 }})
-          </button>
-
-          <button
-            class="reaction-btn"
-            :class="{ active: reactionsByPostId[post.id]?.myReaction === 'DISLIKE' }"
-            @click="handleDislike(post.id)"
-          >
-            👎 Dislike ({{ reactionsByPostId[post.id]?.dislikeCount ?? 0 }})
-          </button>
-
-          <button
-            v-if="reactionsByPostId[post.id]?.myReaction"
-            class="reaction-remove-btn"
-            @click="handleRemoveReaction(post.id)"
-          >
-            Remove reaction
-          </button>
-        </div>
-
-        <div v-if="post.media && post.media.length > 0" class="media-list">
-          <div
-            v-for="media in post.media"
-            :key="media.id"
-            class="media-item"
-          >
-            <img
-              :src="media.url"
-              :alt="media.fileName"
-              class="post-image"
-            />
-          </div>
-        </div>
-
-        <div class="comments-section">
-          <h3>Comments</h3>
-
-          <div class="comment-form">
-            <input
-              v-model="newCommentByPostId[post.id]"
-              type="text"
-              placeholder="Write a comment..."
-            />
-            <button @click="handleCreateComment(post.id)">
-              Add comment
-            </button>
-          </div>
-
-          <div
-            v-if="commentsByPostId[post.id] && commentsByPostId[post.id].length > 0"
-            class="comments-list"
-          >
-            <div
-              v-for="comment in commentsByPostId[post.id]"
-              :key="comment.id"
-              class="comment-item"
-            >
-              <div class="comment-header">
-                <strong>Comment #{{ comment.id }}</strong>
-                <span>{{ formatDate(comment.createdAt) }}</span>
-              </div>
-
-              <p class="comment-content">{{ comment.content }}</p>
-
-              <button
-                class="danger-btn small-btn"
-                @click="handleDeleteComment(post.id, comment.id)"
-              >
-                Delete comment
-              </button>
-            </div>
-          </div>
-
-          <div v-else class="empty-comments">
-            No comments yet
-          </div>
-        </div>
-      </div>
+    <div v-else class="stack">
+      <PostCard
+        v-for="post in posts"
+        :key="post.id"
+        :post="post"
+        :comments="commentsByPostId[post.id] || []"
+        :reaction="reactionsByPostId[post.id]"
+        :draft-comment="newCommentByPostId[post.id] || ''"
+        @update:draft-comment="(value) => updateCommentDraft(post.id, value)"
+        @submit-comment="handleCreateComment"
+        @delete-comment="handleDeleteComment"
+        @like="handleLike"
+        @dislike="handleDislike"
+        @remove-reaction="handleRemoveReaction"
+      />
     </div>
-  </div>
+
+    <template #aside>
+      <FollowUserCard />
+
+      <section class="surface-card side-card">
+        <div class="side-card-header">
+          <h2 class="section-title">Feed summary</h2>
+          <p class="section-subtitle">A quick snapshot of recent content.</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="meta-label">Posts loaded</span>
+            <strong class="stat-value">{{ posts.length }}</strong>
+          </div>
+          <div class="stat-card">
+            <span class="meta-label">Comments visible</span>
+            <strong class="stat-value">{{ totalComments }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="surface-card side-card">
+        <div class="side-card-header">
+          <h2 class="section-title">Interaction tips</h2>
+          <p class="section-subtitle">Keep the feed feeling active and useful.</p>
+        </div>
+        <ul class="tip-list">
+          <li>Reload the feed when you expect new backend activity.</li>
+          <li>Use comments for quick discussion threads on a post.</li>
+          <li>Reactions stay compact so cards remain easy to scan.</li>
+        </ul>
+      </section>
+    </template>
+  </AppShell>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { getFeed } from '../api/feedApi'
-import {
-  createComment,
-  deleteComment,
-  getCommentsByPostId,
-} from '../api/commentApi'
+import { createComment, deleteComment, getCommentsByPostId } from '../api/commentApi'
 import {
   dislikePost,
   getPostReactionSummary,
   likePost,
   removePostReaction,
 } from '../api/reactionApi'
+import AppShell from '../components/AppShell.vue'
+import EmptyState from '../components/EmptyState.vue'
+import FollowUserCard from '../components/FollowUserCard.vue'
+import InlineMessage from '../components/InlineMessage.vue'
+import LoadingCard from '../components/LoadingCard.vue'
+import PostCard from '../components/PostCard.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -145,62 +105,68 @@ const authStore = useAuthStore()
 const posts = ref([])
 const loading = ref(false)
 const error = ref('')
-
 const commentsByPostId = ref({})
 const newCommentByPostId = ref({})
 const reactionsByPostId = ref({})
 
-const loadCommentsForPost = async (postId) => {
-  try {
-    const comments = await getCommentsByPostId(postId)
-    commentsByPostId.value[postId] = comments
-  } catch {
-    commentsByPostId.value[postId] = []
+const totalComments = computed(() =>
+  Object.values(commentsByPostId.value).reduce((sum, comments) => sum + comments.length, 0)
+)
+
+function updateCommentDraft(postId, value) {
+  newCommentByPostId.value = {
+    ...newCommentByPostId.value,
+    [postId]: value,
   }
 }
 
-const loadReactionSummaryForPost = async (postId) => {
-  try {
-    const summary = await getPostReactionSummary(postId)
-    reactionsByPostId.value[postId] = summary
-  } catch {
-    reactionsByPostId.value[postId] = {
+async function hydratePost(postId) {
+  const [comments, reaction] = await Promise.all([
+    getCommentsByPostId(postId).catch(() => []),
+    getPostReactionSummary(postId).catch(() => ({
       postId,
       likeCount: 0,
       dislikeCount: 0,
       myReaction: null,
-    }
+    })),
+  ])
+
+  commentsByPostId.value = {
+    ...commentsByPostId.value,
+    [postId]: comments,
+  }
+
+  reactionsByPostId.value = {
+    ...reactionsByPostId.value,
+    [postId]: reaction,
   }
 }
 
-const goToNotifications = () => {
-  router.push({ name: 'notifications' })
-}
-
-const loadFeed = async () => {
+async function loadFeed() {
   error.value = ''
   loading.value = true
 
   try {
     const pageData = await getFeed(0, 20)
-    posts.value = pageData.content || []
+    const nextPosts = pageData.content || []
 
-    for (const post of posts.value) {
-      await loadCommentsForPost(post.id)
-      await loadReactionSummaryForPost(post.id)
-    }
+    posts.value = nextPosts
+    commentsByPostId.value = {}
+    reactionsByPostId.value = {}
+
+    await Promise.all(nextPosts.map((post) => hydratePost(post.id)))
   } catch {
-    error.value = 'Failed to load feed'
+    error.value = 'The feed could not be loaded. Make sure the feed and supporting services are reachable.'
   } finally {
     loading.value = false
   }
 }
 
-const handleCreateComment = async (postId) => {
-  const content = newCommentByPostId.value[postId]?.trim()
+async function handleCreateComment(postId) {
+  const content = (newCommentByPostId.value[postId] || '').trim()
 
   if (!content) {
-    error.value = 'Comment content cannot be empty'
+    error.value = 'Comment content cannot be empty.'
     return
   }
 
@@ -208,254 +174,107 @@ const handleCreateComment = async (postId) => {
 
   try {
     await createComment(postId, content)
-    newCommentByPostId.value[postId] = ''
-    await loadCommentsForPost(postId)
+    updateCommentDraft(postId, '')
+    await hydratePost(postId)
   } catch {
-    error.value = 'Failed to create comment'
+    error.value = 'The comment could not be added.'
   }
 }
 
-const handleDeleteComment = async (postId, commentId) => {
+async function handleDeleteComment({ postId, commentId }) {
   error.value = ''
 
   try {
     await deleteComment(commentId)
-    await loadCommentsForPost(postId)
+    await hydratePost(postId)
   } catch {
-    error.value = 'Failed to delete comment'
+    error.value = 'The comment could not be deleted.'
   }
 }
 
-const handleLike = async (postId) => {
+async function handleLike(postId) {
   error.value = ''
 
   try {
-    const summary = await likePost(postId)
-    reactionsByPostId.value[postId] = summary
+    reactionsByPostId.value = {
+      ...reactionsByPostId.value,
+      [postId]: await likePost(postId),
+    }
   } catch {
-    error.value = 'Failed to like post'
+    error.value = 'The like action failed.'
   }
 }
 
-const handleDislike = async (postId) => {
+async function handleDislike(postId) {
   error.value = ''
 
   try {
-    const summary = await dislikePost(postId)
-    reactionsByPostId.value[postId] = summary
+    reactionsByPostId.value = {
+      ...reactionsByPostId.value,
+      [postId]: await dislikePost(postId),
+    }
   } catch {
-    error.value = 'Failed to dislike post'
+    error.value = 'The dislike action failed.'
   }
 }
 
-const handleRemoveReaction = async (postId) => {
+async function handleRemoveReaction(postId) {
   error.value = ''
 
   try {
-    const summary = await removePostReaction(postId)
-    reactionsByPostId.value[postId] = summary
+    reactionsByPostId.value = {
+      ...reactionsByPostId.value,
+      [postId]: await removePostReaction(postId),
+    }
   } catch {
-    error.value = 'Failed to remove reaction'
+    error.value = 'The reaction could not be cleared.'
   }
 }
 
-const logout = () => {
+function logout() {
   authStore.logout()
   router.push('/login')
 }
 
-const goToMyPosts = () => {
-  router.push({ name: 'my-posts' })
-}
-
-const formatDate = (value) => {
-  if (!value) return ''
-  return new Date(value).toLocaleString()
-}
-
-onMounted(() => {
-  loadFeed()
-})
+onMounted(loadFeed)
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  padding: 32px;
-  background: #f5f7fb;
+.stack {
+  display: grid;
+  gap: 1.25rem;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
+.side-card {
+  padding: 1.4rem;
+  display: grid;
+  gap: 1rem;
 }
 
-.topbar-actions {
-  display: flex;
-  gap: 10px;
+.side-card-header {
+  display: grid;
+  gap: 0.35rem;
 }
 
-.card {
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+.stats-grid {
+  display: grid;
+  gap: 0.9rem;
 }
 
-.feed-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
+.stat-card {
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.08);
 }
 
-button {
-  width: fit-content;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: #111827;
-  color: white;
-  cursor: pointer;
+.tip-list {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--text-soft);
 }
 
-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.error {
-  color: #b91c1c;
-  margin-top: 12px;
-}
-
-.empty {
-  margin-top: 16px;
-  color: #6b7280;
-}
-
-.post {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.post-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.post-date {
-  color: #6b7280;
-  font-size: 14px;
-  margin-top: 4px;
-}
-
-.post-content {
-  margin-bottom: 12px;
-  white-space: pre-wrap;
-}
-
-.reaction-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.reaction-btn {
-  background: #374151;
-}
-
-.reaction-btn.active {
-  background: #2563eb;
-}
-
-.reaction-remove-btn {
-  background: #6b7280;
-}
-
-.media-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.media-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.post-image {
-  width: 220px;
-  max-width: 100%;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-}
-
-.comments-section {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.comment-form {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.comment-form input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid #d0d7e2;
-  border-radius: 8px;
-}
-
-.comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.comment-item {
-  padding: 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-}
-
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.comment-content {
-  margin-bottom: 8px;
-  white-space: pre-wrap;
-}
-
-.empty-comments {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.danger-btn {
-  background: #b91c1c;
-}
-
-.small-btn {
-  margin-top: 8px;
-  font-size: 13px;
-  padding: 8px 10px;
+.tip-list li + li {
+  margin-top: 0.7rem;
 }
 </style>
