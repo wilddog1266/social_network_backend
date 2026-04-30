@@ -1,24 +1,24 @@
 <template>
   <AppShell
-    eyebrow="Publishing"
-    title="Create and manage your posts"
-    description="A practical workspace for publishing content, attaching media, and monitoring the discussion around your own posts."
+    :eyebrow="t('posts.eyebrow')"
+    :title="t('posts.title')"
+    :description="t('posts.description')"
     :username="authStore.username"
     @logout="logout"
   >
     <template #actions>
       <button type="button" class="button button-secondary" :disabled="loadingPosts" @click="loadPosts">
-        {{ loadingPosts ? 'Refreshing...' : 'Refresh posts' }}
+        {{ loadingPosts ? t('posts.refreshing') : t('posts.refresh') }}
       </button>
-      <RouterLink class="button button-ghost" to="/feed">Open feed</RouterLink>
+      <RouterLink class="button button-ghost" to="/feed">{{ t('posts.openFeed') }}</RouterLink>
     </template>
 
     <section class="surface-card composer-card">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">New post</span>
-          <h2 class="section-title">Share an update</h2>
-          <p class="section-subtitle">Keep it simple: text first, with optional image upload after the post is created.</p>
+          <span class="eyebrow">{{ t('posts.newPost') }}</span>
+          <h2 class="section-title">{{ t('posts.shareUpdate') }}</h2>
+          <p class="section-subtitle">{{ t('posts.shareUpdateCopy') }}</p>
         </div>
         <span class="pill">{{ contentLength }}/1000</span>
       </div>
@@ -28,12 +28,12 @@
         class="textarea"
         rows="5"
         maxlength="1000"
-        placeholder="What do you want to share with your network today?"
+        :placeholder="t('posts.composerPlaceholder')"
       />
 
       <div class="composer-footer">
         <label class="upload-field">
-          <span class="upload-label">Attachment</span>
+          <span class="upload-label">{{ t('posts.attachment') }}</span>
           <input
             ref="fileInput"
             class="input"
@@ -46,7 +46,7 @@
         <div class="composer-actions">
           <p v-if="selectedFile" class="selected-file">{{ selectedFile.name }}</p>
           <button type="button" class="button button-primary" :disabled="loadingCreate" @click="handleCreatePost">
-            {{ loadingCreate ? 'Publishing...' : 'Publish post' }}
+            {{ loadingCreate ? t('posts.publishing') : t('posts.publish') }}
           </button>
         </div>
       </div>
@@ -61,8 +61,8 @@
     <EmptyState
       v-else-if="!posts.length"
       icon="◌"
-      title="No posts yet"
-      description="Your publishing history will appear here once you create the first post."
+      :title="t('posts.emptyTitle')"
+      :description="t('posts.emptyDescription')"
     />
 
     <div v-else class="stack">
@@ -75,7 +75,7 @@
         :draft-comment="newCommentByPostId[post.id] || ''"
         :allow-delete="true"
         :allow-delete-media="true"
-        author-prefix="You"
+        :author-prefix="t('common.youNumber', { id: post.authorId }).replace(` #${post.authorId}`, '')"
         @update:draft-comment="(value) => updateCommentDraft(post.id, value)"
         @submit-comment="handleCreateComment"
         @delete-comment="handleDeleteComment"
@@ -92,21 +92,21 @@
 
       <section class="surface-card side-card">
         <div class="side-card-header">
-          <h2 class="section-title">Profile snapshot</h2>
-          <p class="section-subtitle">Useful numbers from your current publishing session.</p>
+          <h2 class="section-title">{{ t('posts.snapshotTitle') }}</h2>
+          <p class="section-subtitle">{{ t('posts.snapshotCopy') }}</p>
         </div>
 
         <div class="stats-grid">
           <div class="stat-card">
-            <span class="meta-label">Published posts</span>
+            <span class="meta-label">{{ t('posts.publishedPosts') }}</span>
             <strong class="stat-value">{{ posts.length }}</strong>
           </div>
           <div class="stat-card">
-            <span class="meta-label">Attached images</span>
+            <span class="meta-label">{{ t('posts.attachedImages') }}</span>
             <strong class="stat-value">{{ totalMedia }}</strong>
           </div>
           <div class="stat-card">
-            <span class="meta-label">Discussion entries</span>
+            <span class="meta-label">{{ t('posts.discussionEntries') }}</span>
             <strong class="stat-value">{{ totalComments }}</strong>
           </div>
         </div>
@@ -114,13 +114,11 @@
 
       <section class="surface-card side-card">
         <div class="side-card-header">
-          <h2 class="section-title">Publishing guidance</h2>
-          <p class="section-subtitle">Practical cues for a cleaner content workflow.</p>
+          <h2 class="section-title">{{ t('posts.guidanceTitle') }}</h2>
+          <p class="section-subtitle">{{ t('posts.guidanceCopy') }}</p>
         </div>
         <ul class="tip-list">
-          <li>Write the post first, then attach one image when you need more context.</li>
-          <li>Refreshing reloads the backend state so delete operations stay accurate.</li>
-          <li>Comments and reactions are visible here so you can moderate without jumping screens.</li>
+          <li v-for="item in tm('posts.guidance')" :key="item">{{ item }}</li>
         </ul>
       </section>
     </template>
@@ -130,6 +128,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { useI18n } from '../i18n'
 import { useAuthStore } from '../stores/auth'
 import { createPost, deletePost, deletePostMedia, getMyPosts, uploadPostMedia } from '../api/postApi'
 import { createComment, deleteComment, getCommentsByPostId } from '../api/commentApi'
@@ -148,6 +147,7 @@ import PostCard from '../components/PostCard.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t, tm } = useI18n()
 
 const posts = ref([])
 const newPostContent = ref('')
@@ -209,7 +209,7 @@ async function loadPosts() {
 
     await Promise.all(nextPosts.map((post) => hydratePost(post.id)))
   } catch {
-    error.value = 'Your posts could not be loaded. Verify that the post, comment, and reaction services are running.'
+    error.value = t('posts.errors.loadFailed')
   } finally {
     loadingPosts.value = false
   }
@@ -217,7 +217,7 @@ async function loadPosts() {
 
 async function handleCreatePost() {
   if (!newPostContent.value.trim()) {
-    error.value = 'Post content cannot be empty.'
+    error.value = t('posts.errors.emptyPost')
     return
   }
 
@@ -240,7 +240,7 @@ async function handleCreatePost() {
 
     await loadPosts()
   } catch {
-    error.value = 'The post could not be published.'
+    error.value = t('posts.errors.publish')
   } finally {
     loadingCreate.value = false
   }
@@ -253,7 +253,7 @@ async function handleDeletePost(postId) {
     await deletePost(postId)
     await loadPosts()
   } catch {
-    error.value = 'The post could not be deleted.'
+    error.value = t('posts.errors.deletePost')
   }
 }
 
@@ -264,7 +264,7 @@ async function handleDeleteMedia({ postId, mediaId }) {
     await deletePostMedia(postId, mediaId)
     await loadPosts()
   } catch {
-    error.value = 'The image could not be removed.'
+    error.value = t('posts.errors.deleteImage')
   }
 }
 
@@ -272,7 +272,7 @@ async function handleCreateComment(postId) {
   const content = (newCommentByPostId.value[postId] || '').trim()
 
   if (!content) {
-    error.value = 'Comment content cannot be empty.'
+    error.value = t('posts.errors.emptyComment')
     return
   }
 
@@ -283,7 +283,7 @@ async function handleCreateComment(postId) {
     updateCommentDraft(postId, '')
     await hydratePost(postId)
   } catch {
-    error.value = 'The comment could not be added.'
+    error.value = t('posts.errors.createComment')
   }
 }
 
@@ -294,7 +294,7 @@ async function handleDeleteComment({ postId, commentId }) {
     await deleteComment(commentId)
     await hydratePost(postId)
   } catch {
-    error.value = 'The comment could not be deleted.'
+    error.value = t('posts.errors.deleteComment')
   }
 }
 
@@ -307,7 +307,7 @@ async function handleLike(postId) {
       [postId]: await likePost(postId),
     }
   } catch {
-    error.value = 'The like action failed.'
+    error.value = t('posts.errors.like')
   }
 }
 
@@ -320,7 +320,7 @@ async function handleDislike(postId) {
       [postId]: await dislikePost(postId),
     }
   } catch {
-    error.value = 'The dislike action failed.'
+    error.value = t('posts.errors.dislike')
   }
 }
 
@@ -333,7 +333,7 @@ async function handleRemoveReaction(postId) {
       [postId]: await removePostReaction(postId),
     }
   } catch {
-    error.value = 'The reaction could not be cleared.'
+    error.value = t('posts.errors.clearReaction')
   }
 }
 

@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
@@ -18,16 +20,17 @@ COPY services/feed-service/pom.xml services/feed-service/pom.xml
 COPY services/reaction-service/pom.xml services/reaction-service/pom.xml
 COPY services/comment-service/pom.xml services/comment-service/pom.xml
 
-
 # download dependencies
-RUN mvn -q -B -pl services/auth-service -am dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -B -T 1C -pl services/auth-service -am dependency:go-offline
 
 # copy source code
 COPY libs/common-exceptions/src libs/common-exceptions/src
 COPY services/auth-service/src services/auth-service/src
 
 # build auth-service with dependencies
-RUN mvn -q -DskipTests -pl services/auth-service -am package
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -B -T 1C -DskipTests -pl services/auth-service -am package
 
 FROM eclipse-temurin:21-jdk
 

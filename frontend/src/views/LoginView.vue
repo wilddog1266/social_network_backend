@@ -1,30 +1,27 @@
 <template>
   <div class="auth-page">
     <section class="auth-hero">
-      <span class="eyebrow">{{ isRegisterMode ? 'Create account' : 'Welcome back' }}</span>
-      <h1>{{ isRegisterMode ? 'Launch your profile with a polished first step.' : 'A cleaner social space for focused conversations.' }}</h1>
+      <div class="auth-topbar">
+        <span class="eyebrow">{{ isRegisterMode ? t('auth.createAccountEyebrow') : t('auth.welcomeBack') }}</span>
+        <LanguageSwitcher />
+      </div>
+      <h1>{{ isRegisterMode ? t('auth.heroTitleRegister') : t('auth.heroTitleLogin') }}</h1>
       <p>
-        {{ isRegisterMode
-          ? 'Set up your account once, then move straight into publishing posts, reacting to updates, and tracking notifications.'
-          : 'Sign in to manage your posts, review notifications, and stay close to the backend-powered feed you already have.' }}
+        {{ isRegisterMode ? t('auth.heroCopyRegister') : t('auth.heroCopyLogin') }}
       </p>
 
       <div class="hero-grid">
         <article class="hero-card surface-card">
-          <h2>What changed</h2>
+          <h2>{{ t('auth.whatChanged') }}</h2>
           <ul>
-            <li>Unified visual system with shared surfaces, spacing, and actions</li>
-            <li>Responsive dashboard layout for feed, posts, and notifications</li>
-            <li>More robust empty, loading, and error states throughout the app</li>
+            <li v-for="item in tm('auth.whatChangedItems')" :key="item">{{ item }}</li>
           </ul>
         </article>
 
         <article class="hero-card surface-card">
-          <h2>Why it feels better</h2>
+          <h2>{{ t('auth.whyBetter') }}</h2>
           <ul>
-            <li>Clearer typography and hierarchy for fast scanning</li>
-            <li>Consistent forms and buttons instead of page-specific prototypes</li>
-            <li>Practical structure that stays easy to extend</li>
+            <li v-for="item in tm('auth.whyBetterItems')" :key="item">{{ item }}</li>
           </ul>
         </article>
       </div>
@@ -33,9 +30,9 @@
     <section class="auth-panel surface-card">
       <div class="auth-panel-header">
         <div>
-          <span class="eyebrow">{{ isRegisterMode ? 'Register' : 'Login' }}</span>
-          <h2>{{ isRegisterMode ? 'Create your account' : 'Sign in to continue' }}</h2>
-          <p>{{ isRegisterMode ? 'Use the backend registration endpoint and land directly in the app.' : 'Your existing backend login remains the source of truth.' }}</p>
+          <span class="eyebrow">{{ isRegisterMode ? t('auth.registerEyebrow') : t('auth.loginEyebrow') }}</span>
+          <h2>{{ isRegisterMode ? t('auth.registerTitle') : t('auth.signInTitle') }}</h2>
+          <p>{{ isRegisterMode ? t('auth.registerCopy') : t('auth.signInCopy') }}</p>
         </div>
 
         <div class="mode-switch">
@@ -44,49 +41,49 @@
             :class="{ active: !isRegisterMode }"
             to="/login"
           >
-            Sign in
+            {{ t('auth.signInTab') }}
           </RouterLink>
           <RouterLink
             class="switch-link"
             :class="{ active: isRegisterMode }"
             to="/register"
           >
-            Register
+            {{ t('auth.registerTab') }}
           </RouterLink>
         </div>
       </div>
 
       <form class="auth-form" @submit.prevent="handleSubmit">
         <label class="field">
-          <span>Username</span>
+          <span>{{ t('auth.username') }}</span>
           <input
             v-model.trim="form.username"
             class="input"
             type="text"
             autocomplete="username"
-            placeholder="Choose a username"
+            :placeholder="t('auth.usernamePlaceholder')"
           />
         </label>
 
         <label v-if="isRegisterMode" class="field">
-          <span>Email</span>
+          <span>{{ t('auth.email') }}</span>
           <input
             v-model.trim="form.email"
             class="input"
             type="email"
             autocomplete="email"
-            placeholder="you@example.com"
+            :placeholder="t('auth.emailPlaceholder')"
           />
         </label>
 
         <label class="field">
-          <span>Password</span>
+          <span>{{ t('auth.password') }}</span>
           <input
             v-model="form.password"
             class="input"
             type="password"
             :autocomplete="isRegisterMode ? 'new-password' : 'current-password'"
-            placeholder="Enter your password"
+            :placeholder="t('auth.passwordPlaceholder')"
           />
         </label>
 
@@ -98,9 +95,9 @@
       </form>
 
       <p class="auth-footer">
-        {{ isRegisterMode ? 'Already have an account?' : 'Need an account?' }}
+        {{ isRegisterMode ? t('auth.alreadyHaveAccount') : t('auth.needAccount') }}
         <RouterLink :to="isRegisterMode ? '/login' : '/register'">
-          {{ isRegisterMode ? 'Sign in instead' : 'Create one now' }}
+          {{ isRegisterMode ? t('auth.signInInstead') : t('auth.createOneNow') }}
         </RouterLink>
       </p>
     </section>
@@ -111,11 +108,14 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import InlineMessage from '../components/InlineMessage.vue'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import { useI18n } from '../i18n'
 import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const { t, tm } = useI18n()
 
 const form = reactive({
   username: '',
@@ -127,8 +127,10 @@ const loading = ref(false)
 const error = ref('')
 
 const isRegisterMode = computed(() => route.name === 'register')
-const activeButtonLabel = computed(() => (isRegisterMode.value ? 'Create account' : 'Sign in'))
-const activeButtonLoadingLabel = computed(() => (isRegisterMode.value ? 'Creating account...' : 'Signing in...'))
+const activeButtonLabel = computed(() => (isRegisterMode.value ? t('auth.registerButton') : t('auth.signInButton')))
+const activeButtonLoadingLabel = computed(() =>
+  isRegisterMode.value ? t('auth.registerLoading') : t('auth.signInLoading')
+)
 
 function resetFeedback() {
   error.value = ''
@@ -143,15 +145,15 @@ watch(
 
 function validateForm() {
   if (!form.username || !form.password) {
-    return 'Username and password are required.'
+    return t('auth.errors.requiredUsernamePassword')
   }
 
   if (isRegisterMode.value && !form.email) {
-    return 'Email is required to create an account.'
+    return t('auth.errors.emailRequired')
   }
 
   if (isRegisterMode.value && form.password.length < 4) {
-    return 'Choose a password with at least 4 characters.'
+    return t('auth.errors.passwordTooShort')
   }
 
   return ''
@@ -179,9 +181,7 @@ async function handleSubmit() {
 
     router.push('/feed')
   } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.message ||
-      (isRegisterMode.value ? 'Account creation failed. Please verify your details.' : 'Login failed. Check your username and password.')
+    error.value = isRegisterMode.value ? t('auth.errors.registerFailed') : t('auth.errors.loginFailed')
   } finally {
     loading.value = false
   }
@@ -208,6 +208,13 @@ async function handleSubmit() {
 .auth-hero {
   display: grid;
   align-content: center;
+  gap: 1rem;
+}
+
+.auth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 1rem;
 }
 
@@ -310,7 +317,7 @@ async function handleSubmit() {
 }
 
 .auth-footer a {
-  color: #bfdbfe;
+  color: #ffe0ef;
   font-weight: 600;
 }
 
@@ -337,6 +344,11 @@ async function handleSubmit() {
 
   .hero-grid {
     grid-template-columns: 1fr;
+  }
+
+  .auth-topbar {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

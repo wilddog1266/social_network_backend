@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { decodeJwtPayload } from '../utils/formatters'
 import { loginRequest, registerRequest } from '../api/authApi'
+import { createProfile } from '../api/userProfileApi'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -30,6 +31,18 @@ export const useAuthStore = defineStore('auth', {
       const response = await registerRequest(payload)
       this.token = response.accessToken
       localStorage.setItem('token', this.token)
+
+      try {
+        await createProfile({
+          displayName: payload.username.trim(),
+          bio: '',
+          avatarUrl: null,
+        })
+      } catch (error) {
+        if (error?.response?.status !== 409) {
+          throw error
+        }
+      }
     },
 
     logout() {

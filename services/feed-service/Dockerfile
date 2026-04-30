@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
@@ -19,7 +21,8 @@ COPY services/comment-service/pom.xml services/comment-service/pom.xml
 COPY services/reaction-service/pom.xml services/reaction-service/pom.xml
 
 # download dependencies
-RUN mvn -q -B -pl services/feed-service -am dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -B -T 1C -pl services/feed-service -am dependency:go-offline
 
 # copy source code
 COPY libs/common-security/src libs/common-security/src
@@ -27,7 +30,8 @@ COPY libs/common-exceptions/src libs/common-exceptions/src
 COPY services/feed-service/src services/feed-service/src
 
 # build feed-service with dependencies
-RUN mvn -q -DskipTests -pl services/feed-service -am package
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -B -T 1C -DskipTests -pl services/feed-service -am package
 
 FROM eclipse-temurin:21-jdk
 

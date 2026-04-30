@@ -33,6 +33,9 @@ public class PostService {
     @Value("${app.minio.url}")
     private String minioUrl;
 
+    @Value("${app.minio.public-url}")
+    private String minioPublicUrl;
+
     @Value("${app.minio.bucket}")
     private String bucket;
 
@@ -150,7 +153,7 @@ public class PostService {
     }
 
     private PostMediaResponse mediaEntityToResponse(PostMediaEntity entity) {
-        String url = minioUrl + "/" + bucket + "/" + entity.getObjectKey();
+        String url = minioPublicUrl + "/" + bucket + "/" + entity.getObjectKey();
         return new PostMediaResponse(entity.getId(), url, entity.getFileName(), entity.getContentType());
     }
 

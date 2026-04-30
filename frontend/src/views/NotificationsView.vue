@@ -1,14 +1,14 @@
 <template>
   <AppShell
-    eyebrow="Inbox"
-    title="Notifications"
-    description="A cleaner activity inbox that separates unread items, gives better hierarchy, and keeps bulk actions easy to reach."
+    :eyebrow="t('notifications.eyebrow')"
+    :title="t('notifications.title')"
+    :description="t('notifications.description')"
     :username="authStore.username"
     @logout="logout"
   >
     <template #actions>
       <button type="button" class="button button-secondary" :disabled="loading" @click="loadNotifications">
-        {{ loading ? 'Refreshing...' : 'Refresh inbox' }}
+        {{ loading ? t('notifications.refreshing') : t('notifications.refresh') }}
       </button>
       <button
         type="button"
@@ -16,7 +16,7 @@
         :disabled="loading || !notifications.length || unreadCount === 0"
         @click="handleMarkAllAsRead"
       >
-        Mark all as read
+        {{ t('notifications.markAll') }}
       </button>
     </template>
 
@@ -29,8 +29,8 @@
     <EmptyState
       v-else-if="!notifications.length"
       icon="◍"
-      title="No notifications yet"
-      description="New follows, comments, and reactions will appear here as soon as the backend produces them."
+      :title="t('notifications.emptyTitle')"
+      :description="t('notifications.emptyDescription')"
     />
 
     <div v-else class="stack">
@@ -49,7 +49,7 @@
             <div class="notification-top">
               <p class="notification-title">{{ formatNotificationText(notification) }}</p>
               <span class="pill" :class="{ unread: !notification.read }">
-                {{ notification.read ? 'Read' : 'Unread' }}
+                {{ notification.read ? t('notifications.read') : t('notifications.unread') }}
               </span>
             </div>
 
@@ -66,7 +66,7 @@
           class="button button-ghost"
           @click="handleMarkAsRead(notification.id)"
         >
-          Mark as read
+          {{ t('notifications.markOne') }}
         </button>
       </article>
     </div>
@@ -76,17 +76,17 @@
 
       <section class="surface-card side-card">
         <div class="side-card-header">
-          <h2 class="section-title">Inbox overview</h2>
-          <p class="section-subtitle">Useful at-a-glance counts for attention management.</p>
+          <h2 class="section-title">{{ t('notifications.overviewTitle') }}</h2>
+          <p class="section-subtitle">{{ t('notifications.overviewCopy') }}</p>
         </div>
 
         <div class="stats-grid">
           <div class="stat-card">
-            <span class="meta-label">Unread</span>
+            <span class="meta-label">{{ t('notifications.unread') }}</span>
             <strong class="stat-value">{{ unreadCount }}</strong>
           </div>
           <div class="stat-card">
-            <span class="meta-label">Total loaded</span>
+            <span class="meta-label">{{ t('notifications.totalLoaded') }}</span>
             <strong class="stat-value">{{ notifications.length }}</strong>
           </div>
         </div>
@@ -94,13 +94,13 @@
 
       <section class="surface-card side-card">
         <div class="side-card-header">
-          <h2 class="section-title">Notification types</h2>
-          <p class="section-subtitle">Current backend events represented in the UI.</p>
+          <h2 class="section-title">{{ t('notifications.typesTitle') }}</h2>
+          <p class="section-subtitle">{{ t('notifications.typesCopy') }}</p>
         </div>
         <ul class="type-list">
-          <li><span>◎</span> New followers</li>
-          <li><span>◌</span> New comments</li>
-          <li><span>◍</span> Post reactions</li>
+          <li><span>◎</span> {{ t('notifications.newFollowers') }}</li>
+          <li><span>◌</span> {{ t('notifications.newComments') }}</li>
+          <li><span>◍</span> {{ t('notifications.postReactions') }}</li>
         </ul>
       </section>
     </template>
@@ -110,6 +110,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from '../i18n'
 import { useAuthStore } from '../stores/auth'
 import {
   getNotifications,
@@ -125,6 +126,7 @@ import { formatDateTime, formatRelativeTime } from '../utils/formatters'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const notifications = ref([])
 const loading = ref(false)
@@ -140,7 +142,7 @@ async function loadNotifications() {
     const pageData = await getNotifications(0, 20)
     notifications.value = pageData.content || []
   } catch {
-    error.value = 'Notifications could not be loaded. Verify that the notification service is available.'
+    error.value = t('notifications.errors.loadFailed')
   } finally {
     loading.value = false
   }
@@ -153,7 +155,7 @@ async function handleMarkAsRead(id) {
     await markNotificationAsRead(id)
     await loadNotifications()
   } catch {
-    error.value = 'This notification could not be marked as read.'
+    error.value = t('notifications.errors.markRead')
   }
 }
 
@@ -164,22 +166,22 @@ async function handleMarkAllAsRead() {
     await markAllNotificationsAsRead()
     await loadNotifications()
   } catch {
-    error.value = 'Notifications could not be updated.'
+    error.value = t('notifications.errors.markAll')
   }
 }
 
 function formatNotificationText(notification) {
   switch (notification.type) {
     case 'FOLLOWED':
-      return `User #${notification.actorId} followed you`
+      return t('notifications.notificationFollowed', { actorId: notification.actorId })
     case 'COMMENTED':
-      return `User #${notification.actorId} commented on your post`
+      return t('notifications.notificationCommented', { actorId: notification.actorId })
     case 'POST_LIKED':
-      return `User #${notification.actorId} liked your post`
+      return t('notifications.notificationLiked', { actorId: notification.actorId })
     case 'POST_DISLIKED':
-      return `User #${notification.actorId} disliked your post`
+      return t('notifications.notificationDisliked', { actorId: notification.actorId })
     default:
-      return `User #${notification.actorId} interacted with your profile`
+      return t('notifications.notificationFallback', { actorId: notification.actorId })
   }
 }
 
@@ -219,8 +221,8 @@ onMounted(loadNotifications)
 }
 
 .notification-card.unread {
-  border-color: rgba(96, 165, 250, 0.28);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(20, 33, 61, 0.88));
+  border-color: rgba(255, 181, 214, 0.3);
+  background: linear-gradient(180deg, rgba(70, 31, 60, 0.95), rgba(86, 39, 74, 0.88));
 }
 
 .notification-main {
@@ -241,8 +243,8 @@ onMounted(loadNotifications)
 
 .notification-icon.unread,
 .pill.unread {
-  color: #dbeafe;
-  background: rgba(59, 130, 246, 0.16);
+  color: #fff1f8;
+  background: rgba(244, 143, 177, 0.18);
 }
 
 .notification-content {

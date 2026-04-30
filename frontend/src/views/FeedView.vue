@@ -1,16 +1,16 @@
 <template>
   <AppShell
-    eyebrow="Network feed"
-    title="Your social feed"
-    description="A cleaner stream of recent activity from the people you follow, paired with practical interaction tools."
+    :eyebrow="t('feed.eyebrow')"
+    :title="t('feed.title')"
+    :description="t('feed.description')"
     :username="authStore.username"
     @logout="logout"
   >
     <template #actions>
       <button type="button" class="button button-secondary" :disabled="loading" @click="loadFeed">
-        {{ loading ? 'Refreshing...' : 'Refresh feed' }}
+        {{ loading ? t('feed.refreshing') : t('feed.refresh') }}
       </button>
-      <RouterLink class="button button-primary" to="/posts/me">Create a post</RouterLink>
+      <RouterLink class="button button-primary" to="/posts/me">{{ t('feed.createPost') }}</RouterLink>
     </template>
 
     <InlineMessage v-if="error" tone="error" :message="error" />
@@ -22,9 +22,9 @@
     <EmptyState
       v-else-if="!posts.length"
       icon="◎"
-      title="Your feed is quiet right now"
-      description="Follow activity will appear here once there are posts available. You can still publish something from your own profile."
-      action-label="Go to my posts"
+      :title="t('feed.emptyTitle')"
+      :description="t('feed.emptyDescription')"
+      :action-label="t('feed.goToMyPosts')"
       @action="router.push('/posts/me')"
     />
 
@@ -36,6 +36,7 @@
         :comments="commentsByPostId[post.id] || []"
         :reaction="reactionsByPostId[post.id]"
         :draft-comment="newCommentByPostId[post.id] || ''"
+        :author-prefix="t('common.authoredBy', { id: post.authorId }).replace(` #${post.authorId}`, '')"
         @update:draft-comment="(value) => updateCommentDraft(post.id, value)"
         @submit-comment="handleCreateComment"
         @delete-comment="handleDeleteComment"
@@ -50,16 +51,16 @@
 
       <section class="surface-card side-card">
         <div class="side-card-header">
-          <h2 class="section-title">Feed summary</h2>
-          <p class="section-subtitle">A quick snapshot of recent content.</p>
+          <h2 class="section-title">{{ t('feed.summaryTitle') }}</h2>
+          <p class="section-subtitle">{{ t('feed.summaryCopy') }}</p>
         </div>
         <div class="stats-grid">
           <div class="stat-card">
-            <span class="meta-label">Posts loaded</span>
+            <span class="meta-label">{{ t('feed.postsLoaded') }}</span>
             <strong class="stat-value">{{ posts.length }}</strong>
           </div>
           <div class="stat-card">
-            <span class="meta-label">Comments visible</span>
+            <span class="meta-label">{{ t('feed.commentsVisible') }}</span>
             <strong class="stat-value">{{ totalComments }}</strong>
           </div>
         </div>
@@ -67,13 +68,11 @@
 
       <section class="surface-card side-card">
         <div class="side-card-header">
-          <h2 class="section-title">Interaction tips</h2>
-          <p class="section-subtitle">Keep the feed feeling active and useful.</p>
+          <h2 class="section-title">{{ t('feed.tipsTitle') }}</h2>
+          <p class="section-subtitle">{{ t('feed.tipsCopy') }}</p>
         </div>
         <ul class="tip-list">
-          <li>Reload the feed when you expect new backend activity.</li>
-          <li>Use comments for quick discussion threads on a post.</li>
-          <li>Reactions stay compact so cards remain easy to scan.</li>
+          <li v-for="item in tm('feed.tips')" :key="item">{{ item }}</li>
         </ul>
       </section>
     </template>
@@ -83,6 +82,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { useI18n } from '../i18n'
 import { useAuthStore } from '../stores/auth'
 import { getFeed } from '../api/feedApi'
 import { createComment, deleteComment, getCommentsByPostId } from '../api/commentApi'
@@ -101,6 +101,7 @@ import PostCard from '../components/PostCard.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t, tm } = useI18n()
 
 const posts = ref([])
 const loading = ref(false)
@@ -156,7 +157,7 @@ async function loadFeed() {
 
     await Promise.all(nextPosts.map((post) => hydratePost(post.id)))
   } catch {
-    error.value = 'The feed could not be loaded. Make sure the feed and supporting services are reachable.'
+    error.value = t('feed.errors.loadFailed')
   } finally {
     loading.value = false
   }
@@ -166,7 +167,7 @@ async function handleCreateComment(postId) {
   const content = (newCommentByPostId.value[postId] || '').trim()
 
   if (!content) {
-    error.value = 'Comment content cannot be empty.'
+    error.value = t('feed.errors.emptyComment')
     return
   }
 
@@ -177,7 +178,7 @@ async function handleCreateComment(postId) {
     updateCommentDraft(postId, '')
     await hydratePost(postId)
   } catch {
-    error.value = 'The comment could not be added.'
+    error.value = t('feed.errors.createComment')
   }
 }
 
@@ -188,7 +189,7 @@ async function handleDeleteComment({ postId, commentId }) {
     await deleteComment(commentId)
     await hydratePost(postId)
   } catch {
-    error.value = 'The comment could not be deleted.'
+    error.value = t('feed.errors.deleteComment')
   }
 }
 
@@ -201,7 +202,7 @@ async function handleLike(postId) {
       [postId]: await likePost(postId),
     }
   } catch {
-    error.value = 'The like action failed.'
+    error.value = t('feed.errors.like')
   }
 }
 
@@ -214,7 +215,7 @@ async function handleDislike(postId) {
       [postId]: await dislikePost(postId),
     }
   } catch {
-    error.value = 'The dislike action failed.'
+    error.value = t('feed.errors.dislike')
   }
 }
 
@@ -227,7 +228,7 @@ async function handleRemoveReaction(postId) {
       [postId]: await removePostReaction(postId),
     }
   } catch {
-    error.value = 'The reaction could not be cleared.'
+    error.value = t('feed.errors.clearReaction')
   }
 }
 

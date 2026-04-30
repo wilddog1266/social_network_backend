@@ -167,6 +167,7 @@ services:
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: pass
       APP_MINIO_URL: http://minio:9000
+      APP_MINIO_PUBLIC_URL: http://localhost:9000
       APP_MINIO_ACCESS_KEY: minio
       APP_MINIO_SECRET_KEY: minio12345
       APP_MINIO_BUCKET: post-media

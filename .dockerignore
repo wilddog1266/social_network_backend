@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+
+# MacOS
+.DS_Store
+
+# Logs
+*.log
+
+# Build
+target
+**/target
+
+# Node (frontend)
+node_modules
+frontend/node_modules
+frontend/dist
+
+# Temp
+tmp
+temp
+
+# Docker (если есть лишние)
+docker-compose.override.yml
