@@ -80,8 +80,13 @@ backend-систем: декомпозицию на сервисы, асинхр
 ## Run Locally
 
 git clone https://github.com/wilddog1266/social_network_backend.git\
+
 cd social_network_backend\
+
+### Backend:
 docker-compose up --build
+
+### Frontend
 cd frontend\
 npm run dev
 
@@ -114,8 +119,8 @@ frontend: localhost:5173
 -   [x] Notification service\
 -   [x] Feed generation\
 -   [x] Comments & Likes\
--   [ ] Comments & Reactions notifications\
--   [ ] Media optimization
+-   [x] Comments & Reactions notifications\
+-   [x] Media optimization
 
 ------------------------------------------------------------------------
 
