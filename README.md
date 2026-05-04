@@ -15,9 +15,8 @@ backend-систем: декомпозицию на сервисы, асинхр
 
 -   auth-service - аутентификация и авторизация пользователей (JWT)
 -   user-service - управление пользователями и профилями
--   post-service - создание и управление постами
+-   post-service - создание и управление постами, управление медиа файлами
 -   notification-service - обработка событий и генерация уведомлений
--   media-service - работа с файлами (S3/MinIO)
 -   feed-service - лента постов из подписок
 -   reaction-service - управление реакциями (лайк/дизлайк)
 -   comment-service - управление комментариями под постами
@@ -55,7 +54,7 @@ backend-систем: декомпозицию на сервисы, асинхр
 ## Features
 
 -   Stateless JWT authentication
--   Role-based access control
+- JWT-based stateless authentication with ownership-based authorization for protected resources.
 -   Event-driven architecture (Kafka)
 -   REST API
 -   Pagination и фильтрация (Specification API)
@@ -70,7 +69,6 @@ backend-систем: декомпозицию на сервисы, асинхр
 /user-service\
 /post-service\
 /notification-service\
-/media-service\
 /feed-service\
 /comment-service\
 /reaction-service

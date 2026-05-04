@@ -90,7 +90,7 @@ public class PostService {
     public PostResponse addMediaToPost(Long id, MultipartFile file) {
         CurrentUser currentUser = getCurrentUser();
 
-        postRepository.findByIdAndAuthorId(id, currentUser.userId())
+        PostEntity postEntity = postRepository.findByIdAndAuthorId(id, currentUser.userId())
                 .orElseThrow(() -> new NotFoundException("Post not found or access denied"));
 
         UploadedFile uploadedFile = postMediaStorageService.upload(id, file);
@@ -105,22 +105,23 @@ public class PostService {
 
         postMediaRepository.save(postMediaEntity);
 
-        return getPostById(id);
+        return entityToResponse(postEntity);
     }
 
     public PostResponse deleteMediaFromPost(Long id, Long mediaId) {
         CurrentUser currentUser = getCurrentUser();
 
-        postRepository.findByIdAndAuthorId(id, currentUser.userId())
+        PostEntity postEntity = postRepository.findByIdAndAuthorId(id, currentUser.userId())
                 .orElseThrow(() -> new NotFoundException("Post not found or access denied"));
 
         PostMediaEntity postMediaEntity = postMediaRepository.findByIdAndPostId(mediaId, id)
                 .orElseThrow(() -> new NotFoundException("Media not found for this post"));
 
+
         postMediaStorageService.delete(postMediaEntity.getObjectKey());
         postMediaRepository.delete(postMediaEntity);
 
-        return getPostById(id);
+        return entityToResponse(postEntity);
     }
 
     public Page<PostResponse> findPostsByAuthorIds(List<Long> authorIds, int page, int size) {

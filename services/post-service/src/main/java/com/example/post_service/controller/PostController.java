@@ -27,10 +27,9 @@ public class PostController {
 
     @PostMapping("/{id}/media")
     public ResponseEntity<PostResponse> addMediaToPost(@PathVariable Long id,
-                                                       @RequestParam(name = "file")MultipartFile file) {
-        postService.addMediaToPost(id, file);
+                                                       @RequestParam(name = "file") MultipartFile file) {
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(postService.addMediaToPost(id, file));
     }
 
     @GetMapping("/{id}")
