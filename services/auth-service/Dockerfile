@@ -7,7 +7,7 @@ WORKDIR /app
 # root pom
 COPY pom.xml .
 
-# module poms
+# Maven reactor needs every module pom.xml referenced by the root aggregator.
 COPY libs/common-security/pom.xml libs/common-security/pom.xml
 COPY libs/common-events/pom.xml libs/common-events/pom.xml
 COPY libs/common-exceptions/pom.xml libs/common-exceptions/pom.xml
@@ -19,12 +19,14 @@ COPY services/post-service/pom.xml services/post-service/pom.xml
 COPY services/feed-service/pom.xml services/feed-service/pom.xml
 COPY services/reaction-service/pom.xml services/reaction-service/pom.xml
 COPY services/comment-service/pom.xml services/comment-service/pom.xml
+COPY services/media-service/pom.xml services/media-service/pom.xml
 
 # download dependencies
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -q -B -T 1C -pl services/auth-service -am dependency:go-offline
 
 # copy source code
+COPY libs/common-security/src libs/common-security/src
 COPY libs/common-exceptions/src libs/common-exceptions/src
 COPY services/auth-service/src services/auth-service/src
 

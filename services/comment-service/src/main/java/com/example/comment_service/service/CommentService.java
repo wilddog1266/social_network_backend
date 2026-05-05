@@ -13,10 +13,12 @@ import com.example.common.exception.NotFoundException;
 import com.example.common.security.CurrentUser;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -49,10 +51,12 @@ public class CommentService {
         return entityToResponse(saved);
     }
 
-    public List<CommentResponse> getCommentsByPostId(Long postId) {
-        return commentRepository.findByPostIdOrderByCreatedAtDesc(postId).stream()
-                .map(this::entityToResponse)
-                .toList();
+    public Page<CommentResponse> getCommentsByPostId(Long postId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<CommentEntity> commentEntityPage = commentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageRequest);
+
+        return commentEntityPage.map(this::entityToResponse);
     }
 
     public CommentResponse updateComment(Long id, UpdateCommentRequest request) {

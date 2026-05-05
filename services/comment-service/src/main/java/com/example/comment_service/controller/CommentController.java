@@ -6,11 +6,11 @@ import com.example.comment_service.response.CommentResponse;
 import com.example.comment_service.service.CommentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/comments")
@@ -20,8 +20,10 @@ public class CommentController {
     private final CommentService commentService;
 
     @GetMapping("/post/{postId}")
-    public List<CommentResponse> getCommentsByPostId(@PathVariable Long postId) {
-        return commentService.getCommentsByPostId(postId);
+    public Page<CommentResponse> getCommentsByPostId(@PathVariable Long postId,
+                                                     @RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "20") int size) {
+        return commentService.getCommentsByPostId(postId, page, size);
     }
 
     @PostMapping

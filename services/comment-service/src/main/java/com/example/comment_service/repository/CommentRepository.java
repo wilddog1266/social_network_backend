@@ -1,6 +1,8 @@
 package com.example.comment_service.repository;
 
 import com.example.comment_service.entity.CommentEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +12,7 @@ import java.util.Optional;
 @Repository
 public interface CommentRepository extends JpaRepository<CommentEntity, Long> {
 
-    List<CommentEntity> findByPostIdOrderByCreatedAtDesc(Long postId);
+    Page<CommentEntity> findByPostIdOrderByCreatedAtDesc(Long postId, Pageable pageable);
 
     List<CommentEntity> findByAuthorId(Long authorId);
 

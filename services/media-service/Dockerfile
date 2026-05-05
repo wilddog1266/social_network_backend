@@ -23,24 +23,23 @@ COPY services/media-service/pom.xml services/media-service/pom.xml
 
 # download dependencies
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -q -B -T 1C -pl services/notification-service -am dependency:go-offline
+    mvn -q -B -T 1C -pl services/media-service -am dependency:go-offline
 
 # copy source code
-COPY libs/common-events/src libs/common-events/src
 COPY libs/common-security/src libs/common-security/src
 COPY libs/common-exceptions/src libs/common-exceptions/src
-COPY services/notification-service/src services/notification-service/src
+COPY services/media-service/src services/media-service/src
 
-# build notification-service with dependencies
+# build media-service with dependencies
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -q -B -T 1C -DskipTests -pl services/notification-service -am package
+    mvn -q -B -T 1C -DskipTests -pl services/media-service -am package
 
 FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
-COPY --from=build /app/services/notification-service/target/*.jar app.jar
+COPY --from=build /app/services/media-service/target/*.jar app.jar
 
-EXPOSE 8086
+EXPOSE 8083
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

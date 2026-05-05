@@ -1,4 +1,4 @@
-package com.example.post_service.security;
+package com.example.media_service.security;
 
 import com.example.common.security.filter.JwtAuthFilter;
 import com.example.common.security.handler.CustomAccessDeniedHandler;
@@ -17,9 +17,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthFilter authFilter;
-    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final JwtAuthFilter jwtAuthFilter;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -43,10 +43,8 @@ public class SecurityConfig {
                         .anyRequest().denyAll())
                 .httpBasic(b -> b.disable())
                 .formLogin(f -> f.disable())
-                .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();
     }
-
-
 }
