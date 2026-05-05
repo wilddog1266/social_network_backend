@@ -119,6 +119,7 @@ frontend: localhost:5173
 -   [x] Comments & Likes\
 -   [x] Comments & Reactions notifications\
 -   [x] Media optimization
+-   [ ] Move the media management to a separate service
 
 ------------------------------------------------------------------------
 
