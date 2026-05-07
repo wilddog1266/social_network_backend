@@ -20,17 +20,8 @@ public class PostMediaEntity {
     @Column(name = "post_id", nullable = false)
     private Long postId;
 
-    @Column(name = "object_key", nullable = false, unique = true)
-    private String objectKey;
-
-    @Column(name = "file_name", nullable = false)
-    private String fileName;
-
-    @Column(name = "file_size", nullable = false)
-    private Long fileSize;
-
-    @Column(name = "content_type", nullable = false, length = 100)
-    private String contentType;
+    @Column(name = "media_id", nullable = false)
+    private Long mediaId;
 
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;

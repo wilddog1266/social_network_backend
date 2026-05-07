@@ -3,6 +3,7 @@ package com.example.common.handler;
 import com.example.common.exception.BadRequestException;
 import com.example.common.exception.ConflictException;
 import com.example.common.exception.NotFoundException;
+import com.example.common.exception.StorageException;
 import com.example.common.response.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,12 @@ public class GlobalExceptionHandler {
         response.setErrors(errors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<ApiErrorResponse> handleStorageException(StorageException e, HttpServletRequest request) {
+        ApiErrorResponse response = buildErrorResponse("Storage error: " + e.getMessage(), 500, request);
+        return ResponseEntity.status(500).body(response);
     }
 
     @ExceptionHandler(Exception.class)

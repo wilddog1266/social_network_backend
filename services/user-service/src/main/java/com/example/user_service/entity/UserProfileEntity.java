@@ -32,8 +32,8 @@ public class UserProfileEntity {
     @Column(name = "bio")
     private String bio;
 
-    @Column(name = "avatar_url")
-    private String avatarUrl;
+    @Column(name = "avatar_id")
+    private Long avatarId;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)

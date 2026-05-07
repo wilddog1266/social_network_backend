@@ -36,7 +36,7 @@ export const useAuthStore = defineStore('auth', {
         await createProfile({
           displayName: payload.username.trim(),
           bio: '',
-          avatarUrl: null,
+          avatarId: null,
         })
       } catch (error) {
         if (error?.response?.status !== 409) {

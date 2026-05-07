@@ -1,23 +1,25 @@
 package com.example.post_service.service;
 
+import com.example.common.exception.BadRequestException;
 import com.example.common.exception.NotFoundException;
 import com.example.common.security.CurrentUser;
-import com.example.post_service.dto.UploadedFile;
+import com.example.post_service.client.MediaClient;
 import com.example.post_service.entity.PostEntity;
 import com.example.post_service.entity.PostMediaEntity;
 import com.example.post_service.repository.PostMediaRepository;
 import com.example.post_service.repository.PostRepository;
 import com.example.post_service.request.CreatePostRequest;
+import com.example.post_service.response.MediaClientResponse;
 import com.example.post_service.response.PostMediaResponse;
 import com.example.post_service.response.PostResponse;
+import com.example.post_service.response.enums.MediaStatus;
+import com.example.post_service.response.enums.MediaType;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,17 +29,8 @@ import java.util.List;
 public class PostService {
 
     private final PostRepository postRepository;
-    private final PostMediaStorageService postMediaStorageService;
     private final PostMediaRepository postMediaRepository;
-
-    @Value("${app.minio.url}")
-    private String minioUrl;
-
-    @Value("${app.minio.public-url}")
-    private String minioPublicUrl;
-
-    @Value("${app.minio.bucket}")
-    private String bucket;
+    private final MediaClient mediaClient;
 
     public PostResponse createPost(CreatePostRequest request) {
         CurrentUser currentUser = getCurrentUser();
@@ -49,6 +42,33 @@ public class PostService {
         PostEntity saved = postRepository.save(postEntity);
 
         return entityToResponse(saved);
+    }
+
+    public PostResponse attachMediaToPost(Long postId, Long mediaId) {
+        Long currentUserId = getCurrentUser().userId();
+
+        PostEntity currentPost = postRepository.findByIdAndAuthorId(postId, currentUserId)
+                .orElseThrow(() -> new NotFoundException("Post not found or access denied"));
+
+        MediaClientResponse media = mediaClient.getMediaById(mediaId);
+
+        if(!media.getStatus().equals(MediaStatus.READY) || !media.getType().equals(MediaType.POST_IMAGE)) {
+            throw new BadRequestException("Can't attach media");
+        }
+
+        if(postMediaRepository.existsByPostIdAndMediaId(postId, mediaId)) {
+            throw new BadRequestException("Media already attached to post");
+        }
+
+        PostMediaEntity saved = new PostMediaEntity();
+        saved.setSortOrder(postMediaRepository.findByPostIdOrderBySortOrderAsc(postId).size());
+        saved.setMediaId(mediaId);
+        saved.setPostId(postId);
+
+        postMediaRepository.save(saved);
+
+        return entityToResponse(currentPost);
+
     }
 
     public PostResponse getPostById(Long id) {
@@ -87,39 +107,16 @@ public class PostService {
         return entityToResponse(saved);
     }
 
-    public PostResponse addMediaToPost(Long id, MultipartFile file) {
-        CurrentUser currentUser = getCurrentUser();
+    public PostResponse deleteMediaFromPost(Long postId, Long mediaId) {
+        Long currentUserId = getCurrentUser().userId();
 
-        PostEntity postEntity = postRepository.findByIdAndAuthorId(id, currentUser.userId())
+        PostEntity postEntity = postRepository.findByIdAndAuthorId(postId, currentUserId)
                 .orElseThrow(() -> new NotFoundException("Post not found or access denied"));
 
-        UploadedFile uploadedFile = postMediaStorageService.upload(id, file);
+        PostMediaEntity mediaEntity = postMediaRepository.findByPostIdAndMediaId(postId, mediaId)
+                .orElseThrow(() -> new NotFoundException("Media not found or access denied"));
 
-        PostMediaEntity postMediaEntity = new PostMediaEntity();
-        postMediaEntity.setContentType(uploadedFile.getContentType());
-        postMediaEntity.setFileName(uploadedFile.getFileName());
-        postMediaEntity.setFileSize(uploadedFile.getFileSize());
-        postMediaEntity.setObjectKey(uploadedFile.getObjectKey());
-        postMediaEntity.setPostId(id);
-        postMediaEntity.setSortOrder(0);
-
-        postMediaRepository.save(postMediaEntity);
-
-        return entityToResponse(postEntity);
-    }
-
-    public PostResponse deleteMediaFromPost(Long id, Long mediaId) {
-        CurrentUser currentUser = getCurrentUser();
-
-        PostEntity postEntity = postRepository.findByIdAndAuthorId(id, currentUser.userId())
-                .orElseThrow(() -> new NotFoundException("Post not found or access denied"));
-
-        PostMediaEntity postMediaEntity = postMediaRepository.findByIdAndPostId(mediaId, id)
-                .orElseThrow(() -> new NotFoundException("Media not found for this post"));
-
-
-        postMediaStorageService.delete(postMediaEntity.getObjectKey());
-        postMediaRepository.delete(postMediaEntity);
+        postMediaRepository.delete(mediaEntity);
 
         return entityToResponse(postEntity);
     }
@@ -154,8 +151,7 @@ public class PostService {
     }
 
     private PostMediaResponse mediaEntityToResponse(PostMediaEntity entity) {
-        String url = minioPublicUrl + "/" + bucket + "/" + entity.getObjectKey();
-        return new PostMediaResponse(entity.getId(), url, entity.getFileName(), entity.getContentType());
+        return new PostMediaResponse(entity.getMediaId());
     }
 
     private PostResponse entityToResponse(PostEntity entity) {

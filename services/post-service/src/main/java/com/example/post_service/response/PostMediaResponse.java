@@ -10,8 +10,5 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PostMediaResponse {
-    private Long id;
-    private String url;
-    private String fileName;
-    private String contentType;
+    private Long mediaId;
 }

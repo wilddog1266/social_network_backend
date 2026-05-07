@@ -130,7 +130,8 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { useAuthStore } from '../stores/auth'
-import { createPost, deletePost, deletePostMedia, getMyPosts, uploadPostMedia } from '../api/postApi'
+import { createPost, deletePost, deletePostMedia, getMyPosts, attachMediaToPost } from '../api/postApi'
+import { resolvePostMedia, uploadMedia } from '../api/mediaApi'
 import { createComment, deleteComment, getCommentsByPostId } from '../api/commentApi'
 import {
   dislikePost,
@@ -201,7 +202,12 @@ async function loadPosts() {
 
   try {
     const pageData = await getMyPosts()
-    const nextPosts = pageData.content || []
+    const nextPosts = await Promise.all(
+      (pageData.content || []).map(async (post) => ({
+        ...post,
+        media: await resolvePostMedia(post.media || []),
+      }))
+    )
 
     posts.value = nextPosts
     commentsByPostId.value = {}
@@ -225,10 +231,16 @@ async function handleCreatePost() {
   loadingCreate.value = true
 
   try {
-    const createdPost = await createPost(newPostContent.value.trim())
+    let uploadedMedia = null
 
     if (selectedFile.value) {
-      await uploadPostMedia(createdPost.id, selectedFile.value)
+      uploadedMedia = await uploadMedia(selectedFile.value, 'POST_IMAGE')
+    }
+
+    const createdPost = await createPost(newPostContent.value.trim())
+
+    if (uploadedMedia) {
+      await attachMediaToPost(createdPost.id, uploadedMedia.id)
     }
 
     newPostContent.value = ''
@@ -239,8 +251,14 @@ async function handleCreatePost() {
     }
 
     await loadPosts()
-  } catch {
-    error.value = t('posts.errors.publish')
+  } catch (requestError) {
+    if (selectedFile.value && requestError?.response?.status === 400 && requestError?.config?.url?.includes('8083')) {
+      error.value = t('posts.errors.uploadImage')
+    } else if (selectedFile.value && requestError?.config?.url?.includes('/media/')) {
+      error.value = t('posts.errors.attachImage')
+    } else {
+      error.value = t('posts.errors.publish')
+    }
   } finally {
     loadingCreate.value = false
   }

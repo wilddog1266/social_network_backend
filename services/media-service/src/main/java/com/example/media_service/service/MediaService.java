@@ -1,6 +1,8 @@
 package com.example.media_service.service;
 
 import com.example.common.exception.BadRequestException;
+import com.example.common.exception.NotFoundException;
+import com.example.common.exception.StorageException;
 import com.example.common.security.CurrentUser;
 import com.example.media_service.entity.MediaEntity;
 import com.example.media_service.entity.enums.MediaStatus;
@@ -9,6 +11,7 @@ import com.example.media_service.repository.MediaRepository;
 import com.example.media_service.response.MediaResponse;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,7 +39,7 @@ public class MediaService {
     public MediaResponse upload(MultipartFile multipartFile, MediaType type) {
         Long currentUserId = getCurrentUser().userId();
 
-        String contentType = getContentType(multipartFile);
+        String contentType = validateAndGetContentType(multipartFile);
 
         String objectKey = buildObjectKey(type, currentUserId, contentType);
 
@@ -65,24 +68,58 @@ public class MediaService {
         } catch (Exception e) {
             uploading.setStatus(FAILED);
             mediaRepository.save(uploading);
-            throw new BadRequestException("Failed to upload file");
+            throw new StorageException("Failed to upload file");
         }
 
         uploading.setStatus(MediaStatus.READY);
 
         MediaEntity saved = mediaRepository.save(uploading);
 
-        return new MediaResponse(
-                saved.getId(),
-                saved.getObjectKey(),
-                saved.getBucket(),
-                saved.getSize(),
-                saved.getOriginalFileName(),
-                publicUrl + "/" + saved.getBucket() + "/" + saved.getObjectKey(),
-                saved.getStatus(),
-                saved.getType()
-        );
+        return entityToResponse(saved);
+    }
 
+    public MediaResponse getPublicById(Long id) {
+        MediaEntity media = mediaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Media not found"));
+
+        if(media.getStatus() != MediaStatus.READY) {
+            throw new NotFoundException("Media is not available");
+        }
+
+        return entityToResponse(media);
+    }
+
+    public MediaResponse getById(Long id) {
+        Long currentUserId = getCurrentUser().userId();
+
+        MediaEntity media = mediaRepository.findByIdAndOwnerUserId(id, currentUserId)
+                .orElseThrow(() -> new NotFoundException("Media not found or access denied"));
+
+        if(media.getStatus() != MediaStatus.READY) {
+            throw new NotFoundException("Media is not available");
+        }
+
+        return entityToResponse(media);
+    }
+
+    public void deleteById(Long id) {
+        Long currentUserId = getCurrentUser().userId();
+
+        MediaEntity toDelete = mediaRepository.findByIdAndOwnerUserId(id, currentUserId)
+                .orElseThrow(() -> new NotFoundException("Media not found"));
+
+        try {
+            minioClient.removeObject(
+                            RemoveObjectArgs.builder()
+                            .bucket(bucket)
+                            .object(toDelete.getObjectKey())
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new StorageException("Failed to delete media");
+        }
+
+        mediaRepository.delete(toDelete);
     }
 
     private CurrentUser getCurrentUser() {
@@ -91,7 +128,7 @@ public class MediaService {
                 .getPrincipal();
     }
 
-    private String getContentType(MultipartFile multipartFile) {
+    private String validateAndGetContentType(MultipartFile multipartFile) {
         if(multipartFile.isEmpty()) {
             throw new BadRequestException("File is empty");
         }
@@ -131,6 +168,21 @@ public class MediaService {
         if(contentType.contains("png")) return "png";
 
         throw new BadRequestException("Unsupported content type");
+    }
+
+    private MediaResponse entityToResponse(MediaEntity entity) {
+        MediaResponse response = new MediaResponse();
+
+        response.setBucket(entity.getBucket());
+        response.setSize(entity.getSize());
+        response.setType(entity.getType());
+        response.setId(entity.getId());
+        response.setStatus(entity.getStatus());
+        response.setObjectKey(entity.getObjectKey());
+        response.setOriginalFileName(entity.getOriginalFileName());
+        response.setUrl(publicUrl + "/" + entity.getBucket() + "/" + entity.getObjectKey());
+
+        return response;
     }
 
 }

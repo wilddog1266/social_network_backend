@@ -10,10 +10,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -32,12 +30,12 @@ public class PostController {
         return ResponseEntity.status(HttpStatus.CREATED).body(postService.createPost(request));
     }
 
-    @PostMapping(value = "/{id}/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Add media file to post")
-    public ResponseEntity<PostResponse> addMediaToPost(@PathVariable Long id,
-                                                       @RequestParam(name = "file") MultipartFile file) {
+    @PostMapping(value = "/{postId}/media/{mediaId}")
+    @Operation(summary = "Attach media file to post")
+    public ResponseEntity<PostResponse> addMediaToPost(@PathVariable Long postId,
+                                                       @PathVariable Long mediaId) {
 
-        return ResponseEntity.ok(postService.addMediaToPost(id, file));
+        return ResponseEntity.ok(postService.attachMediaToPost(postId, mediaId));
     }
 
     @GetMapping("/{id}")

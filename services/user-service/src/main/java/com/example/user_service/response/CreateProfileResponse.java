@@ -19,7 +19,7 @@ public class CreateProfileResponse {
 
     private String bio;
 
-    private String avatarUrl;
+    private Long avatarId;
 
     private Instant createdAt;
 }

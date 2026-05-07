@@ -19,6 +19,8 @@ public interface MediaRepository extends JpaRepository<MediaEntity, Long> {
 
     Optional<MediaEntity> findByObjectKey(String objectKey);
 
+    Optional<MediaEntity> findByIdAndOwnerUserId(Long id, Long ownerUserId);
+
     boolean existsByObjectKey(String objectKey);
 
     Page<MediaEntity> findByStatus(MediaStatus status, Pageable pageable);

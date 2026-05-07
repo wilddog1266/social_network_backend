@@ -14,15 +14,8 @@ export async function createPost(content) {
   return response.data
 }
 
-export async function uploadPostMedia(postId, file) {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const response = await api.post(
-    `${POST_API_URL}/api/posts/${postId}/media`,
-    formData
-  )
-
+export async function attachMediaToPost(postId, mediaId) {
+  const response = await api.post(`${POST_API_URL}/api/posts/${postId}/media/${mediaId}`)
   return response.data
 }
 

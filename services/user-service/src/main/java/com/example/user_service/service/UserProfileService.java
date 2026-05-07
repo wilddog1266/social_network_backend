@@ -1,6 +1,8 @@
 package com.example.user_service.service;
 
+import com.example.common.exception.BadRequestException;
 import com.example.common.security.CurrentUser;
+import com.example.user_service.client.MediaClient;
 import com.example.user_service.entity.UserProfileEntity;
 import com.example.user_service.exception.ProfileAlreadyExistsException;
 import com.example.user_service.exception.ProfileNotFoundException;
@@ -9,6 +11,9 @@ import com.example.user_service.request.CreateProfileRequest;
 import com.example.user_service.request.UpdateProfileRequest;
 import com.example.user_service.response.CreateProfileResponse;
 import com.example.user_service.response.ProfileResponse;
+import com.example.user_service.response.media.MediaClientResponse;
+import com.example.user_service.response.media.enums.MediaStatus;
+import com.example.user_service.response.media.enums.MediaType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,6 +26,8 @@ public class UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
 
+    private final MediaClient mediaClient;
+
     public CreateProfileResponse createProfile(CreateProfileRequest request) {
         CurrentUser currentUser = getCurrentUser();
         String normalizedUsername = currentUser.username().trim().toLowerCase(Locale.ROOT);
@@ -31,15 +38,22 @@ public class UserProfileService {
 
         UserProfileEntity userProfileEntity = new UserProfileEntity();
 
+        if(request.getAvatarId() != null) {
+           MediaClientResponse mediaClientResponse = mediaClient.getMediaById(request.getAvatarId());
+           if(!mediaClientResponse.getStatus().equals(MediaStatus.READY) || !mediaClientResponse.getType().equals(MediaType.AVATAR)) {
+               throw new BadRequestException("Invalid avatar media");
+           }
+        }
+
         userProfileEntity.setUserId(currentUser.userId());
         userProfileEntity.setUsername(normalizedUsername);
         userProfileEntity.setBio(request.getBio());
-        userProfileEntity.setAvatarUrl(request.getAvatarUrl());
+        userProfileEntity.setAvatarId(request.getAvatarId());
         userProfileEntity.setDisplayName(request.getDisplayName().trim());
 
         UserProfileEntity saved = userProfileRepository.save(userProfileEntity);
 
-        return new CreateProfileResponse(saved.getUserId(), normalizedUsername, saved.getDisplayName(), saved.getBio(), saved.getAvatarUrl(), saved.getCreatedAt());
+        return new CreateProfileResponse(saved.getUserId(), normalizedUsername, saved.getDisplayName(), saved.getBio(), saved.getAvatarId(), saved.getCreatedAt());
     }
 
     public ProfileResponse getMyProfile() {
@@ -64,8 +78,13 @@ public class UserProfileService {
         UserProfileEntity entity = userProfileRepository.findByUserId(currentUser.userId())
                 .orElseThrow(ProfileNotFoundException::new);
 
-        if(request.getAvatarUrl() != null) {
-            entity.setAvatarUrl(request.getAvatarUrl());
+        if(request.getAvatarId() != null) {
+            MediaClientResponse mediaClientResponse = mediaClient.getMediaById(request.getAvatarId());
+            if(!mediaClientResponse.getStatus().equals(MediaStatus.READY) || !mediaClientResponse.getType().equals(MediaType.AVATAR)) {
+                throw new BadRequestException("Invalid avatar media");
+            } else {
+                entity.setAvatarId(request.getAvatarId());
+            }
         }
 
         if(request.getBio() != null && !request.getBio().trim().isBlank()) {
@@ -88,6 +107,6 @@ public class UserProfileService {
     }
 
     private ProfileResponse entityToResponse(UserProfileEntity entity) {
-        return new ProfileResponse(entity.getUserId(), entity.getUsername(), entity.getDisplayName(), entity.getBio(), entity.getAvatarUrl(), entity.getCreatedAt());
+        return new ProfileResponse(entity.getUserId(), entity.getUsername(), entity.getDisplayName(), entity.getBio(), entity.getAvatarId(), entity.getCreatedAt());
     }
 }

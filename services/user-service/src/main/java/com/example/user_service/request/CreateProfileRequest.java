@@ -16,6 +16,6 @@ public class CreateProfileRequest {
     @Size(min = 3, max = 100)
     private String displayName;
 
-    private String avatarUrl;
+    private Long avatarId;
 
 }

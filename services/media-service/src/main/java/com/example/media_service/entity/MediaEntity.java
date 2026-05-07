@@ -10,7 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.Instant;
 
 @Entity
-@Table(name = "media")
+@Table(schema = "media", name = "medias")
 @Getter
 @Setter
 public class MediaEntity {

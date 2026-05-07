@@ -14,5 +14,5 @@ public class UpdateProfileRequest {
     @Size(max = 500)
     private String bio;
 
-    private String avatarUrl;
+    private Long avatarId;
 }
