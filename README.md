@@ -118,8 +118,9 @@ frontend: localhost:5173
 -   [x] Feed generation\
 -   [x] Comments & Likes\
 -   [x] Comments & Reactions notifications\
--   [x] Media optimization
--   [ ] Move the media management to a separate service
+-   [x] Media optimization\
+-   [x] Move the media management to a separate service\
+-   [ ] Media debug\
 
 ------------------------------------------------------------------------
 
