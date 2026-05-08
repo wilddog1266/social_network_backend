@@ -17,5 +17,4 @@ public class CreateProfileRequest {
     private String displayName;
 
     private Long avatarId;
-
 }

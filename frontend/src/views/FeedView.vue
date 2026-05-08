@@ -85,7 +85,8 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import { useAuthStore } from '../stores/auth'
 import { getFeed } from '../api/feedApi'
-import { resolvePostMedia } from '../api/mediaApi'
+import { buildPublicMediaMap, collectMediaIdsFromPosts, hydratePostMedia } from '../api/mediaApi'
+import { buildPublicProfileMap } from '../api/userProfileApi'
 import { createComment, deleteComment, getCommentsByPostId } from '../api/commentApi'
 import {
   dislikePost,
@@ -150,12 +151,14 @@ async function loadFeed() {
 
   try {
     const pageData = await getFeed(0, 20)
-    const nextPosts = await Promise.all(
-      (pageData.content || []).map(async (post) => ({
-        ...post,
-        media: await resolvePostMedia(post.media || []),
-      }))
-    )
+    const rawPosts = pageData.content || []
+    const authorMap = await buildPublicProfileMap(rawPosts.map((post) => post.authorId))
+    const mediaMap = await buildPublicMediaMap(collectMediaIdsFromPosts(rawPosts))
+    const nextPosts = rawPosts.map((post) => ({
+      ...post,
+      author: authorMap[post.authorId] || null,
+      media: hydratePostMedia(post.media || [], mediaMap),
+    }))
 
     posts.value = nextPosts
     commentsByPostId.value = {}

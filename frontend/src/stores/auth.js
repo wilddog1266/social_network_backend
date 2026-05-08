@@ -25,6 +25,18 @@ export const useAuthStore = defineStore('auth', {
       const response = await loginRequest(username, password)
       this.token = response.accessToken
       localStorage.setItem('token', this.token)
+
+      try {
+        await createProfile({
+          displayName: (username || this.username || '').trim(),
+          bio: '',
+          avatarId: null,
+        })
+      } catch (error) {
+        if (error?.response?.status !== 409) {
+          throw error
+        }
+      }
     },
 
     async register(payload) {

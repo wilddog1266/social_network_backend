@@ -1,15 +1,19 @@
 package com.example.user_service.controller;
 
 import com.example.user_service.request.CreateProfileRequest;
+import com.example.user_service.request.PublicBunchProfileRequest;
 import com.example.user_service.request.UpdateProfileRequest;
 import com.example.user_service.response.CreateProfileResponse;
 import com.example.user_service.response.ProfileResponse;
+import com.example.user_service.response.PublicProfileResponse;
 import com.example.user_service.service.UserProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -38,5 +42,15 @@ public class UserProfileController {
     @PutMapping("/me")
     public ResponseEntity<ProfileResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(userProfileService.updateProfile(request));
+    }
+
+    @GetMapping("/public/{userId}")
+    public ResponseEntity<PublicProfileResponse> getPublicProfile(@PathVariable Long userId) {
+        return ResponseEntity.ok(userProfileService.getPublicProfileById(userId));
+    }
+
+    @PostMapping("/public/bunch")
+    public ResponseEntity<List<PublicProfileResponse>> getPublicBunchProfiles(@Valid @RequestBody PublicBunchProfileRequest request) {
+        return ResponseEntity.ok(userProfileService.getPublicBunchProfilesByIds(request));
     }
 }

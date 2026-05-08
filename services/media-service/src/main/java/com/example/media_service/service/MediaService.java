@@ -8,6 +8,7 @@ import com.example.media_service.entity.MediaEntity;
 import com.example.media_service.entity.enums.MediaStatus;
 import com.example.media_service.entity.enums.MediaType;
 import com.example.media_service.repository.MediaRepository;
+import com.example.media_service.request.MediaBatchRequest;
 import com.example.media_service.response.MediaResponse;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -18,9 +19,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.example.media_service.entity.enums.MediaStatus.FAILED;
+import static com.example.media_service.entity.enums.MediaStatus.READY;
 
 @Service
 @RequiredArgsConstructor
@@ -87,6 +92,16 @@ public class MediaService {
         }
 
         return entityToResponse(media);
+    }
+
+    public List<MediaResponse> getBatchPublic(MediaBatchRequest request) {
+        List<Long> ids = request.getIds();
+
+        return mediaRepository.findByIdInAndStatus(ids, READY)
+                .stream()
+                .distinct()
+                .map(this::entityToResponse)
+                .toList();
     }
 
     public MediaResponse getById(Long id) {

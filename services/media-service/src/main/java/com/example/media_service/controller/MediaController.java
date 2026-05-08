@@ -1,12 +1,16 @@
 package com.example.media_service.controller;
 
 import com.example.media_service.entity.enums.MediaType;
+import com.example.media_service.request.MediaBatchRequest;
 import com.example.media_service.response.MediaResponse;
 import com.example.media_service.service.MediaService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/media")
@@ -29,6 +33,11 @@ public class MediaController {
     @GetMapping("/public/{id}")
     public ResponseEntity<MediaResponse> getPublicMediaById(@PathVariable Long id) {
         return ResponseEntity.ok(mediaService.getPublicById(id));
+    }
+
+    @PostMapping("/public/batch")
+    public ResponseEntity<List<MediaResponse>> getPublicBatchByIds(@Valid @RequestBody MediaBatchRequest request) {
+        return ResponseEntity.ok(mediaService.getBatchPublic(request));
     }
 
     @DeleteMapping("/{id}")

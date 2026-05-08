@@ -8,9 +8,11 @@ import com.example.user_service.exception.ProfileAlreadyExistsException;
 import com.example.user_service.exception.ProfileNotFoundException;
 import com.example.user_service.repository.UserProfileRepository;
 import com.example.user_service.request.CreateProfileRequest;
+import com.example.user_service.request.PublicBunchProfileRequest;
 import com.example.user_service.request.UpdateProfileRequest;
 import com.example.user_service.response.CreateProfileResponse;
 import com.example.user_service.response.ProfileResponse;
+import com.example.user_service.response.PublicProfileResponse;
 import com.example.user_service.response.media.MediaClientResponse;
 import com.example.user_service.response.media.enums.MediaStatus;
 import com.example.user_service.response.media.enums.MediaType;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -58,11 +61,24 @@ public class UserProfileService {
 
     public ProfileResponse getMyProfile() {
         CurrentUser currentUser = getCurrentUser();
-
-        UserProfileEntity entity = userProfileRepository.findByUserId(currentUser.userId())
-                .orElseThrow(ProfileNotFoundException::new);
+        UserProfileEntity entity = findOrCreateCurrentProfile(currentUser);
 
         return entityToResponse(entity);
+    }
+
+    public PublicProfileResponse getPublicProfileById(Long userId) {
+        UserProfileEntity entity = userProfileRepository.findByUserId(userId)
+                .orElseThrow(ProfileNotFoundException::new);
+
+        return entityToPublicProfileResponse(entity);
+    }
+
+    public List<PublicProfileResponse> getPublicBunchProfilesByIds(PublicBunchProfileRequest request) {
+        return userProfileRepository.findAllByIdIn(request.getIds())
+                .stream()
+                .distinct()
+                .map(this::entityToPublicProfileResponse)
+                .toList();
     }
 
     public ProfileResponse getProfileById(Long userId) {
@@ -74,9 +90,7 @@ public class UserProfileService {
 
     public ProfileResponse updateProfile(UpdateProfileRequest request) {
         CurrentUser currentUser = getCurrentUser();
-
-        UserProfileEntity entity = userProfileRepository.findByUserId(currentUser.userId())
-                .orElseThrow(ProfileNotFoundException::new);
+        UserProfileEntity entity = findOrCreateCurrentProfile(currentUser);
 
         if(request.getAvatarId() != null) {
             MediaClientResponse mediaClientResponse = mediaClient.getMediaById(request.getAvatarId());
@@ -100,6 +114,22 @@ public class UserProfileService {
         return entityToResponse(entity);
     }
 
+    private UserProfileEntity findOrCreateCurrentProfile(CurrentUser currentUser) {
+        return userProfileRepository.findByUserId(currentUser.userId())
+                .orElseGet(() -> {
+                    String normalizedUsername = currentUser.username().trim().toLowerCase(Locale.ROOT);
+
+                    UserProfileEntity entity = new UserProfileEntity();
+                    entity.setUserId(currentUser.userId());
+                    entity.setUsername(normalizedUsername);
+                    entity.setDisplayName(currentUser.username().trim());
+                    entity.setBio("");
+                    entity.setAvatarId(null);
+
+                    return userProfileRepository.save(entity);
+                });
+    }
+
     private CurrentUser getCurrentUser() {
         return (CurrentUser) SecurityContextHolder.getContext()
                 .getAuthentication()
@@ -108,5 +138,9 @@ public class UserProfileService {
 
     private ProfileResponse entityToResponse(UserProfileEntity entity) {
         return new ProfileResponse(entity.getUserId(), entity.getUsername(), entity.getDisplayName(), entity.getBio(), entity.getAvatarId(), entity.getCreatedAt());
+    }
+
+    private PublicProfileResponse entityToPublicProfileResponse(UserProfileEntity entity) {
+        return new PublicProfileResponse(entity.getId(), entity.getUsername(), entity.getDisplayName(), entity.getAvatarId());
     }
 }

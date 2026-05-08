@@ -28,4 +28,6 @@ public interface MediaRepository extends JpaRepository<MediaEntity, Long> {
     Page<MediaEntity> findByOwnerUserIdAndStatus(Long ownerUserId, MediaStatus status, Pageable pageable);
 
     List<MediaEntity> findAllByIdIn(List<Long> ids);
+
+    List<MediaEntity> findByIdInAndStatus(List<Long> ids, MediaStatus status);
 }
